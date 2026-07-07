@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disc Golf Tracker — Max Crowe</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app-header">
+  <div class="app-logo">
+    <div class="logo-disc"></div>
+    <div class="logo-text">
+      <span class="logo-name">Max Crowe</span>
+      <span class="logo-pdga">PDGA #97579</span>
+    </div>
+  </div>
+  <nav>
+    <button class="active" onclick="showPage('dashboard')">Dashboard</button>
+    <button onclick="showPage('tournaments')">Tournaments</button>
+    <button onclick="showPage('leagues')">Leagues</button>
+    <button onclick="showPage('courses')">Courses</button>
+    <button onclick="showPage('stats')">Stats</button>
+  </nav>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" onclick="exportData()">Export</button>
+    <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">
+      Import
+      <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+    </label>
+  </div>
+</div>
+
+<main>
+
+  <!-- ═══════════════ DASHBOARD ═══════════════ -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+      <div class="flex-center gap-8">
+        <span style="font-size:13px;color:var(--text-muted)">PDGA Rating:</span>
+        <input id="pdga-rating-input" type="number" placeholder="—" style="width:80px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;padding:5px 8px" onchange="savePDGARating(this.value)">
+      </div>
+    </div>
+
+    <div class="grid-4 mb-24" id="dash-stats"></div>
+
+    <div class="grid-2 mb-24">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent Tournaments</span></div>
+        <div class="table-wrap" id="dash-recent-tourneys"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent League Rounds</span></div>
+        <div class="table-wrap" id="dash-recent-leagues"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Rating History</span></div>
+        <div class="card-body">
+          <div class="rating-chart-wrap" id="dash-rating-chart"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Top Courses (Avg Rating)</span></div>
+        <div class="card-body" id="dash-top-courses"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TOURNAMENTS ═══════════════ -->
+  <div id="page-tournaments" class="page">
+
+    <!-- Sub-nav tabs -->
+    <div class="lg-subnav">
+      <button id="tourn-tab-rounds" class="lg-tab" onclick="switchTournTab('rounds')">Rounds</button>
+      <button id="tourn-tab-events" class="lg-tab lg-tab-active" onclick="switchTournTab('events')">My Tournaments</button>
+    </div>
+
+    <!-- Rounds sub-view -->
+    <div id="tourn-view-rounds" style="display:none">
+      <div class="page-header">
+        <h1 class="page-title">Tournament <span>Rounds</span></h1>
+        <button class="btn btn-primary" onclick="openModal('modal-tround')">+ Add Round</button>
+      </div>
+      <div class="filters">
+        <span class="filter-label">Filter:</span>
+        <select id="filter-tr-tourn" onchange="renderTRounds()"><option value="">All Tournaments</option></select>
+        <select id="filter-tr-course" onchange="renderTRounds()"><option value="">All Courses</option></select>
+        <select id="filter-tr-year" onchange="renderTRounds()"><option value="">All Years</option></select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable" data-col="date" data-table="trounds">Date</th>
+                <th class="sortable" data-col="tournament" data-table="trounds">Tournament</th>
+                <th class="sortable" data-col="roundNum" data-table="trounds">Round</th>
+                <th class="sortable" data-col="course" data-table="trounds">Course</th>
+                <th class="sortable" data-col="par" data-table="trounds">Par</th>
+                <th class="sortable" data-col="score" data-table="trounds">Score</th>
+                <th class="sortable" data-col="rel" data-table="trounds">+/−</th>
+                <th class="sortable" data-col="rating" data-table="trounds">Rating</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="trounds-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Tournaments sub-view -->
+    <div id="tourn-view-events">
+      <div id="tournament-list-view">
+        <div class="page-header">
+          <h1 class="page-title">My <span>Tournaments</span></h1>
+          <button class="btn btn-primary" onclick="openModal('modal-tournament')">+ Add Tournament</button>
+        </div>
+        <div class="filters">
+          <span class="filter-label">Filter:</span>
+          <select id="filter-tourn-year" onchange="renderTournaments()"><option value="">All Years</option></select>
+          <select id="filter-tourn-tier" onchange="renderTournaments()">
+            <option value="">All Tiers</option>
+            <option>A-Tier</option><option>B-Tier</option><option>C-Tier</option>
+            <option>NT</option><option>Major</option><option>Pro Tour</option><option>Other</option>
+          </select>
+          <select id="filter-tourn-div" onchange="renderTournaments()">
+            <option value="">All Divisions</option>
+            <option>MPO</option><option>MA1</option><option>MA2</option><option>MA3</option>
+          </select>
+          <input id="filter-tourn-search" type="text" placeholder="Search…" oninput="renderTournaments()" style="min-width:180px">
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sortable" data-col="name" data-table="tournaments">Event</th>
+                  <th class="sortable" data-col="date" data-table="tournaments">Date</th>
+                  <th>Location</th>
+                  <th class="sortable" data-col="tier" data-table="tournaments">Tier</th>
+                  <th>Division</th>
+                  <th class="sortable" data-col="place" data-table="tournaments">Place</th>
+                  <th class="sortable" data-col="prize" data-table="tournaments">Net</th>
+                  <th>Rounds</th>
+                  <th>Courses</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="tournaments-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ LEAGUES ═══════════════ -->
+  <div id="page-leagues" class="page">
+
+    <!-- Sub-nav tabs -->
+    <div class="lg-subnav">
+      <button id="lg-tab-rounds" class="lg-tab lg-tab-active" onclick="switchLeagueTab('rounds')">Rounds</button>
+      <button id="lg-tab-manage" class="lg-tab" onclick="switchLeagueTab('manage')">My Leagues</button>
+    </div>
+
+    <!-- Rounds sub-view -->
+    <div id="lg-view-rounds">
+      <div class="page-header">
+        <h1 class="page-title">League <span>Rounds</span></h1>
+        <button class="btn btn-primary" onclick="openModal('modal-league')">+ Add Round</button>
+      </div>
+      <div class="filters">
+        <span class="filter-label">Filter:</span>
+        <select id="filter-lg-league" onchange="renderLeagues()"><option value="">All Leagues</option></select>
+        <select id="filter-lg-course" onchange="renderLeagues()"><option value="">All Courses</option></select>
+        <select id="filter-lg-year" onchange="renderLeagues()"><option value="">All Years</option></select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table id="leagues-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-col="date" data-table="leagues">Date</th>
+                <th class="sortable" data-col="league" data-table="leagues">League</th>
+                <th class="sortable" data-col="course" data-table="leagues">Course</th>
+                <th class="sortable" data-col="par" data-table="leagues">Par</th>
+                <th class="sortable" data-col="score" data-table="leagues">Score</th>
+                <th class="sortable" data-col="rel" data-table="leagues">+/−</th>
+                <th class="sortable" data-col="place" data-table="leagues">Place</th>
+                <th class="sortable" data-col="field" data-table="leagues">Field</th>
+                <th class="sortable" data-col="fee" data-table="leagues">Fee</th>
+                <th class="sortable" data-col="cash" data-table="leagues">Cash</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="leagues-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Leagues sub-view -->
+    <div id="lg-view-manage" style="display:none">
+      <div id="lg-list-view">
+        <div class="page-header">
+          <h1 class="page-title">My <span>Leagues</span></h1>
+          <button class="btn btn-primary" onclick="openModal('modal-league-def')">+ Add League</button>
+        </div>
+        <div id="league-defs-grid" class="grid-auto"></div>
+      </div>
+      <div id="lg-detail-view" style="display:none">
+        <button class="back-btn" onclick="showLeagueList()">← Back to My Leagues</button>
+        <div id="lg-detail-content"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ COURSES ═══════════════ -->
+  <div id="page-courses" class="page">
+    <div id="courses-list-view">
+      <div class="page-header">
+        <h1 class="page-title">Courses</h1>
+        <button class="btn btn-primary" onclick="openModal('modal-course')">+ Add Course</button>
+      </div>
+      <div id="courses-grid" class="grid-auto"></div>
+    </div>
+
+    <div id="course-detail-view" style="display:none">
+      <button class="back-btn" onclick="showCourseList()">← Back to Courses</button>
+      <div id="course-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ STATS ═══════════════ -->
+  <div id="page-stats" class="page">
+    <div class="page-header">
+      <h1 class="page-title">Stats <span>&amp; Analytics</span></h1>
+    </div>
+
+    <p class="section-title">Tournament Performance</p>
+    <div class="grid-4 mb-24" id="stats-tourn"></div>
+
+    <p class="section-title">League Performance</p>
+    <div class="grid-4 mb-24" id="stats-league"></div>
+
+    <div class="grid-2 mb-24">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Placements by Tier</span></div>
+        <div class="card-body" id="stats-tier-placements"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Financials</span></div>
+        <div class="card-body" id="stats-financials"></div>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-24">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Average Rating by Year</span></div>
+        <div class="card-body">
+          <div id="stats-rating-by-year"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Best &amp; Worst Rounds</span></div>
+        <div class="card-body" id="stats-best-worst"></div>
+      </div>
+    </div>
+
+    <div class="card mb-24">
+      <div class="card-header"><span class="card-title">Course Averages (Tournament Rounds)</span></div>
+      <div class="card-body">
+        <div class="table-wrap" id="stats-course-avgs"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Division History</span></div>
+      <div class="card-body" id="stats-divisions"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- League Definition Modal -->
+<div id="modal-league-def" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-league-def-title">Add League</span>
+      <button class="modal-close" onclick="maybeCloseModal('modal-league-def')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>League Name *</label>
+        <input id="ld-name" type="text" placeholder="e.g. Tuesday Night League">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Day / Time</label>
+          <input id="ld-day" type="text" placeholder="e.g. Tuesday evenings">
+        </div>
+        <div class="form-group">
+          <label>Home Course</label>
+          <div style="position:relative">
+            <input id="ld-location" type="text" placeholder="Type a course name…" autocomplete="off"
+              oninput="showCourseDropdown(this.value)"
+              onfocus="showCourseDropdown(this.value)"
+              onblur="setTimeout(hideCourseDropdown, 150)">
+            <div id="ld-course-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1.5px solid var(--accent);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:180px;overflow-y:auto;z-index:200;box-shadow:var(--shadow)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="ld-notes" placeholder="Any notes about this league…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="maybeCloseModal('modal-league-def')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLeagueDef()">Save League</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tournament Modal -->
+<div id="modal-tournament" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-tournament-title">Add Tournament</span>
+      <button class="modal-close" onclick="maybeCloseModal('modal-tournament')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Event Name *</label>
+        <input id="t-name" type="text" placeholder="e.g. Ledgestone Insurance Open">
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Start Date *</label>
+          <input id="t-date" type="date" oninput="onTournDateChange()">
+        </div>
+        <div class="form-group">
+          <label>Number of Days</label>
+          <input id="t-days" type="number" placeholder="e.g. 2" min="1" max="14" oninput="onTournDaysChange()">
+        </div>
+        <div class="form-group">
+          <label>End Date</label>
+          <input id="t-end-date" type="text" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;text-align:center;" placeholder="—">
+        </div>
+      </div>
+      <div class="form-row" style="display:none">
+        <div class="form-group">
+          <label>Season</label>
+          <input id="t-year" type="text" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;" placeholder="—">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location / City</label>
+          <input id="t-location" type="text" placeholder="e.g. Peoria, IL">
+        </div>
+        <div class="form-group">
+          <label>Tier</label>
+          <select id="t-tier">
+            <option value="">Select tier…</option>
+            <option>A-Tier</option><option>B-Tier</option><option>C-Tier</option>
+            <option>NT</option><option>Major</option><option>Pro Tour</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Division</label>
+          <select id="t-division">
+            <option>MPO</option><option>MA1</option><option>MA2</option><option>MA3</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Field Size</label>
+          <input id="t-field" type="number" placeholder="e.g. 72" min="1">
+        </div>
+        <div class="form-group">
+          <label>Number of Rounds</label>
+          <input id="t-rounds" type="number" placeholder="e.g. 2" min="1" max="10">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Placing</label>
+          <input id="t-place" type="number" placeholder="e.g. 14" min="1">
+        </div>
+        <div class="form-group">
+          <label>Event Page URL</label>
+          <input id="t-url" type="url" placeholder="https://pdga.com/…">
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Registration Fee ($)</label>
+          <input id="t-fee" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>Prize Money ($)</label>
+          <input id="t-prize" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label>Caddy Fee ($)</label>
+          <input id="t-caddy" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Courses Played</label>
+        <div id="t-courses-chips-wrap" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:38px;padding:6px 10px;border:1.5px solid var(--border);border-bottom:none;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:var(--surface);cursor:text" onclick="document.getElementById('t-courses-filter').focus()">
+          <div id="t-courses-chips" style="display:contents"></div>
+          <input id="t-courses-filter" type="text" placeholder="Search courses…" autocomplete="off"
+            oninput="filterCourseChecklist(this.value)"
+            style="border:none;outline:none;flex:1;min-width:120px;padding:0;font-size:14px;background:transparent;">
+        </div>
+        <div id="t-courses-list" style="border:1.5px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:160px;overflow-y:auto;background:var(--surface)"></div>
+        <input type="hidden" id="t-courses">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="t-notes" placeholder="Any notes about this event…"></textarea>
+      </div>
+    </div>
+    <!-- Inline rounds entry — shown after tournament is saved -->
+    <div id="t-rounds-section" style="display:none;border-top:2px solid var(--border)">
+      <div style="padding:16px 24px 8px;background:var(--surface2)">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Add Rounds</div>
+        <div style="font-size:13px;color:var(--text-muted)">Tournament saved. Add rounds below, then close when done.</div>
+      </div>
+      <div id="t-rounds-list" style="padding:0 24px"></div>
+      <div style="padding:12px 24px;background:var(--surface2)">
+        <div id="t-inline-round-form" style="display:none">
+          <div class="form-row-3" style="margin-bottom:12px">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Round #</label>
+              <input id="tir-roundnum" type="number" placeholder="e.g. 1" min="1" max="10">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Date</label>
+              <input id="tir-date" type="date" oninput="document.getElementById('tir-year').value=this.value?this.value.slice(0,4):''">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Season</label>
+              <input id="tir-year" type="text" readonly tabindex="-1"
+                style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-align:center;" placeholder="—">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>Course</label>
+            <select id="tir-course"><option value="">Select course…</option></select>
+          </div>
+          <div class="form-row-3" style="margin-bottom:12px">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Par</label>
+              <input id="tir-par" type="number" placeholder="e.g. 54" min="1" oninput="updateTIRRelScore()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Score (throws)</label>
+              <input id="tir-score" type="number" placeholder="e.g. 52" min="1" oninput="updateTIRRelScore()">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Score (relative)</label>
+              <input id="tir-rel" type="text" placeholder="—" readonly tabindex="-1"
+                style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>PDGA Round Rating</label>
+            <input id="tir-rating" type="number" placeholder="e.g. 1020" min="500" max="1200">
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-ghost btn-sm" onclick="hideInlineRoundForm()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveInlineRound()">Save Round</button>
+          </div>
+        </div>
+        <button id="t-add-round-btn" class="btn btn-ghost btn-sm" onclick="showInlineRoundForm()" style="width:100%;justify-content:center">+ Add Round</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="maybeCloseModal('modal-tournament')">Cancel</button>
+      <button id="t-save-btn" class="btn btn-primary" onclick="saveTournament()">Save Tournament</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tournament Round Modal -->
+<div id="modal-tround" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-tround-title">Add Tournament Round</span>
+      <button class="modal-close" onclick="maybeCloseModal('modal-tround')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date *</label>
+          <input id="tr-date" type="date" oninput="document.getElementById('tr-year').value=this.value?this.value.slice(0,4):''">
+        </div>
+        <div class="form-group">
+          <label>Season</label>
+          <input id="tr-year" type="text" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;" placeholder="—">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tournament *</label>
+        <select id="tr-tournament" onchange="onTRTournamentChange(this.value)"><option value="">Select tournament…</option></select>
+      </div>
+      <div class="form-group">
+        <label>Course *</label>
+        <select id="tr-course"><option value="">Select course…</option></select>
+      </div>
+      <div class="form-group">
+        <label>Round Number *</label>
+        <input id="tr-round-num" type="number" placeholder="e.g. 1" min="1" max="10">
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Par</label>
+          <input id="tr-par" type="number" placeholder="e.g. 54" min="1" oninput="updateTRRelScore()">
+        </div>
+        <div class="form-group">
+          <label>Score (total throws)</label>
+          <input id="tr-score" type="number" placeholder="e.g. 52" min="1" oninput="updateTRRelScore()">
+        </div>
+        <div class="form-group">
+          <label>Score (relative to par)</label>
+          <input id="tr-rel" type="text" placeholder="—" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>PDGA Round Rating</label>
+        <input id="tr-rating" type="number" placeholder="e.g. 1020" min="500" max="1200">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="tr-notes" placeholder="Notes about this round…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="maybeCloseModal('modal-tround')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTRound()">Save Round</button>
+    </div>
+  </div>
+</div>
+
+<!-- League Round Modal -->
+<div id="modal-league" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-league-title">Add League Round</span>
+      <button class="modal-close" onclick="maybeCloseModal('modal-league')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date *</label>
+          <input id="lg-date" type="date" oninput="document.getElementById('lg-year').value=this.value?this.value.slice(0,4):''">
+        </div>
+        <div class="form-group">
+          <label>Season</label>
+          <input id="lg-year" type="text" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;" placeholder="—">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>League *</label>
+          <select id="lg-league" onchange="prefillLeagueCourse(this.value)"><option value="">Select league…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Course *</label>
+          <select id="lg-course"><option value="">Select course…</option></select>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Par</label>
+          <input id="lg-par" type="number" placeholder="e.g. 54" min="1" oninput="updateLGRelScore()">
+        </div>
+        <div class="form-group">
+          <label>Score (total throws)</label>
+          <input id="lg-score" type="number" placeholder="e.g. 51" min="1" oninput="updateLGRelScore()">
+        </div>
+        <div class="form-group">
+          <label>Score (relative to par)</label>
+          <input id="lg-rel" type="text" placeholder="—" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Place</label>
+          <input id="lg-place" type="number" placeholder="e.g. 3" min="1">
+        </div>
+        <div class="form-group">
+          <label>Field Size</label>
+          <input id="lg-field" type="number" placeholder="e.g. 24" min="1">
+        </div>
+        <div class="form-group">
+          <label>Entry Fee ($)</label>
+          <input id="lg-fee" type="number" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cash Earned ($)</label>
+        <input id="lg-cash" type="number" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="lg-notes" placeholder="Notes about this round…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="maybeCloseModal('modal-league')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLeague()">Save Round</button>
+    </div>
+  </div>
+</div>
+
+<!-- Course Modal -->
+<div id="modal-course" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-course-title">Add Course</span>
+      <button class="modal-close" onclick="maybeCloseModal('modal-course')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Course Name *</label>
+        <input id="c-name" type="text" placeholder="e.g. Hawk Island Park">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>City / Location</label>
+          <input id="c-location" type="text" placeholder="e.g. Lansing, MI">
+        </div>
+        <div class="form-group">
+          <label>Holes</label>
+          <input id="c-holes" type="number" placeholder="18" min="1" max="36">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="c-notes" placeholder="Notes about this course…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="maybeCloseModal('modal-course')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCourse()">Save Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- Abandon confirm dialog -->
+
+<!-- Tournament detail panel -->
+<div id="tourn-panel-overlay" onclick="closeTournPanel(event)">
+  <div id="tourn-panel">
+    <div id="tournament-detail-content"></div>
+  </div>
+</div>
+
+<div id="abandon-dialog" class="modal-overlay" style="z-index:600">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-body" style="padding:28px 24px 20px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">Abandon Entry?</div>
+      <p style="font-size:14px;color:var(--text-muted);line-height:1.5">You have unsaved data in this form. Closing will discard everything you've entered.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center;gap:12px">
+      <button id="abandon-cancel" class="btn btn-ghost">Keep Editing</button>
+      <button id="abandon-confirm" class="btn btn-danger">Discard &amp; Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
