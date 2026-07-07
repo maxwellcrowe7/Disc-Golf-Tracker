@@ -5,6 +5,7 @@ let state = {
   tournaments: [],
   tRounds: [],
   leagues: [],
+  leagueRounds: [],
   courses: [],
   pdgaRating: null,
   editingId: null
