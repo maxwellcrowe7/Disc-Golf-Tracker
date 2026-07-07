@@ -25,11 +25,13 @@
     <button onclick="showPage('stats')">Stats</button>
   </nav>
   <div class="header-actions">
+    <span id="user-email" style="font-size:12px;color:rgba(255,255,255,0.45)"></span>
     <button class="btn btn-ghost btn-sm" onclick="exportData()">Export</button>
     <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">
       Import
       <input type="file" accept=".json" onchange="importData(event)" style="display:none">
     </label>
+    <button id="signout-btn" class="btn btn-ghost btn-sm" onclick="doSignOut()" style="display:none">Sign Out</button>
   </div>
 </div>
 
@@ -693,8 +695,35 @@
   </div>
 </div>
 
+<!-- Login screen (shown until signed in) -->
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:2000;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="width:100%;max-width:380px">
+    <div class="card-body" style="padding:32px 28px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <div class="logo-disc"></div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">Disc Golf Tracker</div>
+          <div style="font-size:12px;color:var(--text-muted)">Sign in to see your rounds</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input id="login-email" type="email" placeholder="you@example.com" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSignIn()">
+      </div>
+      <div id="login-msg" style="font-size:13px;min-height:18px;margin-bottom:12px"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="doSignIn()">Sign In</button>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="doSignUp()">Create Account</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
 </body>
 </html>

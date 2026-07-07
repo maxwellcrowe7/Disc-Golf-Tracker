@@ -1,4 +1,15 @@
 // ═══════════════════════════════════════════════
+//  SUPABASE
+// ═══════════════════════════════════════════════
+// The publishable key is safe to ship in public code — Row Level Security
+// on the database decides what any key-holder can actually do.
+const SUPABASE_URL = 'https://vxykjkuqhtfrzfktymja.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oq2u0mXKoALbSCFTWu-iJQ_q1dO_zmB';
+const APP_ID = 'disc-golf-tracker';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sbUser = null;
+
+// ═══════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════
 let state = {
@@ -11,32 +22,115 @@ let state = {
   editingId: null
 };
 
-function loadState() {
-  const saved = localStorage.getItem('dgt-state');
-  if (saved) {
-    try {
-      state = JSON.parse(saved);
-      // Migration: old builds stored league rounds in 'leagues'.
-      // New shape uses 'leagueRounds' for rounds and 'leagues' for league definitions.
-      if (!Array.isArray(state.leagueRounds)) {
-        if (Array.isArray(state.leagues) && state.leagues.some(x => x.courseId)) {
-          state.leagueRounds = state.leagues.filter(x => x.courseId);
-          state.leagues = state.leagues.filter(x => !x.courseId);
-        } else {
-          state.leagueRounds = [];
-        }
-      }
-      // Ensure all arrays exist regardless of when the data was saved
-      if (!Array.isArray(state.tournaments)) state.tournaments = [];
-      if (!Array.isArray(state.tRounds)) state.tRounds = [];
-      if (!Array.isArray(state.leagues)) state.leagues = [];
-      if (!Array.isArray(state.courses)) state.courses = [];
-    } catch(e) { console.warn('Failed to load state', e); }
+function normalizeState(s) {
+  // Migration: old builds stored league rounds in 'leagues'.
+  // New shape uses 'leagueRounds' for rounds and 'leagues' for league definitions.
+  if (!Array.isArray(s.leagueRounds)) {
+    if (Array.isArray(s.leagues) && s.leagues.some(x => x.courseId)) {
+      s.leagueRounds = s.leagues.filter(x => x.courseId);
+      s.leagues = s.leagues.filter(x => !x.courseId);
+    } else {
+      s.leagueRounds = [];
+    }
+  }
+  // Ensure all arrays exist regardless of when the data was saved
+  if (!Array.isArray(s.tournaments)) s.tournaments = [];
+  if (!Array.isArray(s.tRounds)) s.tRounds = [];
+  if (!Array.isArray(s.leagues)) s.leagues = [];
+  if (!Array.isArray(s.courses)) s.courses = [];
+  return s;
+}
+
+async function loadState() {
+  const { data: row, error } = await sb.from('app_state')
+    .select('data')
+    .eq('app', APP_ID)
+    .maybeSingle();
+  if (error) { showToast('Failed to load data: ' + error.message); return; }
+  if (row) {
+    state = normalizeState(row.data);
+  } else {
+    // First sign-in for this account: if this browser has data saved from
+    // the pre-cloud version, move it up to the cloud automatically.
+    const local = localStorage.getItem('dgt-state');
+    if (local) {
+      try {
+        state = normalizeState(JSON.parse(local));
+        await saveStateNow();
+        showToast('Local data moved to your cloud account');
+      } catch(e) { console.warn('Could not migrate local data', e); }
+    }
   }
 }
 
 function saveState() {
-  localStorage.setItem('dgt-state', JSON.stringify(state));
+  saveStateNow().catch(err => showToast('Save failed: ' + err.message));
+}
+
+async function saveStateNow() {
+  if (!sbUser) return;
+  const { error } = await sb.from('app_state').upsert({
+    user_id: sbUser.id,
+    app: APP_ID,
+    data: state,
+    updated_at: new Date().toISOString()
+  });
+  if (error) throw error;
+}
+
+// ═══════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════
+async function initApp() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await startApp(session);
+  else document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function startApp(session) {
+  sbUser = session.user;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('user-email').textContent = sbUser.email;
+  document.getElementById('signout-btn').style.display = '';
+  await loadState();
+  renderDashboard();
+}
+
+function setLoginMsg(msg, isError) {
+  const el = document.getElementById('login-msg');
+  el.textContent = msg || '';
+  el.style.color = isError ? 'var(--red)' : 'var(--accent)';
+}
+
+async function doSignIn() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) return setLoginMsg('Enter your email and password.', true);
+  setLoginMsg('Signing in…');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return setLoginMsg(error.message, true);
+  setLoginMsg('');
+  await startApp(data.session);
+}
+
+async function doSignUp() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) return setLoginMsg('Enter an email and a password to create your account.', true);
+  setLoginMsg('Creating account…');
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) return setLoginMsg(error.message, true);
+  if (data.session) {
+    setLoginMsg('');
+    await startApp(data.session);
+  } else {
+    setLoginMsg('Account created — check your email for a confirmation link, then sign in here.');
+  }
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  location.reload();
 }
 
 function uid() {
@@ -1959,5 +2053,4 @@ document.addEventListener('wheel', function(e) {
   }
 }, { passive: true });
 
-loadState();
-renderDashboard();
+initApp();
