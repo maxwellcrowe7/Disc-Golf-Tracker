@@ -112,6 +112,18 @@
     margin-left: auto;
   }
 
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    transition: color 0.15s;
+  }
+  .icon-btn:hover { color: #fff; }
+
   /* ── MAIN ── */
   main { max-width: 1400px; margin: 0 auto; padding: 28px 20px 60px; }
 
@@ -514,6 +526,42 @@
     font-weight: 600;
   }
 
+  /* ── LEAGUE COLORS ── */
+  .league-color-swatch {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.65);
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  /* Oversize the native color input so only its swatch color shows
+     through the circular window above */
+  .league-color-swatch input[type="color"] {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .league-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 7px;
+    vertical-align: middle;
+  }
+
   /* ── PLACING ── */
   .place-1 { color: var(--gold); font-weight: 700; }
   .place-top3 { color: var(--accent); font-weight: 600; }
@@ -760,4 +808,42 @@
   }
   .course-check-item.selected .course-check-box {
     background: var(--accent); border-color: var(--accent);
+  }
+
+  /* ── MOBILE HEADER ── */
+  /* Below 700px the header becomes two rows: logo + actions on top,
+     nav tabs spread edge-to-edge underneath. No horizontal scrolling. */
+  @media (max-width: 700px) {
+    #app-header {
+      flex-wrap: wrap;
+      padding: 0 12px;
+    }
+
+    .app-logo {
+      border-right: none;
+      margin-right: 0;
+      padding: 10px 0;
+    }
+
+    .header-actions {
+      gap: 6px;
+      padding: 8px 0;
+    }
+
+    .header-actions .btn-sm { padding: 5px 9px; }
+
+    #user-email { display: none; }
+
+    nav {
+      order: 3;
+      flex-basis: 100%;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    nav button {
+      flex: 1 1 auto;
+      padding: 11px 2px;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
   }

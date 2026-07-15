@@ -93,6 +93,7 @@ async function startApp(session) {
   document.getElementById('user-email').textContent = sbUser.email;
   document.getElementById('signout-btn').style.display = '';
   await loadState();
+  applyProfile();
   renderDashboard();
 }
 
@@ -219,12 +220,52 @@ function showPage(name) {
   const btns = document.querySelectorAll('nav button');
   btns.forEach(b => { if (b.getAttribute('onclick').includes("'" + name + "'")) b.classList.add('active'); });
 
-  if (name === 'dashboard') renderDashboard();
+  if (name === 'dashboard') {
+    // Re-render whichever dashboard sub-view is currently showing
+    if (document.getElementById('dash-view-stats').style.display !== 'none') renderStats();
+    else renderDashboard();
+  }
   if (name === 'tournaments') { renderTournaments(); populateTournamentFilters(); }
   if (name === 't-rounds') { showPage('tournaments'); switchTournTab('rounds'); return; }
   if (name === 'leagues') { renderLeagues(); populateLeagueFilters(); renderLeagueDefinitions(); }
   if (name === 'courses') renderCourses();
-  if (name === 'stats') renderStats();
+  if (name === 'settings') renderSettings();
+}
+
+// ═══════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════
+function pdgaProfileURL() {
+  const num = state.pdgaNumber || '97579';
+  return 'https://www.pdga.com/player/' + num;
+}
+
+function applyProfile() {
+  document.getElementById('logo-name').textContent = state.playerName || 'Max Crowe';
+  document.getElementById('logo-pdga').textContent = 'PDGA #' + (state.pdgaNumber || '97579');
+}
+
+function openPDGAProfile() {
+  window.open(pdgaProfileURL(), '_blank');
+}
+
+function renderSettings() {
+  document.getElementById('set-player-name').value = state.playerName || 'Max Crowe';
+  document.getElementById('set-pdga-number').value = state.pdgaNumber || '97579';
+  const link = document.getElementById('set-pdga-link');
+  link.href = pdgaProfileURL();
+  link.style.display = '';
+}
+
+function saveSettings() {
+  const name = document.getElementById('set-player-name').value.trim();
+  const num = document.getElementById('set-pdga-number').value.trim();
+  if (name) state.playerName = name;
+  if (num) state.pdgaNumber = num;
+  saveState();
+  applyProfile();
+  document.getElementById('set-pdga-link').href = pdgaProfileURL();
+  showToast('Profile saved');
 }
 
 // ═══════════════════════════════════════════════
@@ -406,6 +447,15 @@ function populateSelect(selectId, items, placeholder) {
   });
 }
 
+function switchDashTab(tab) {
+  document.getElementById('dash-view-overview').style.display = tab === 'overview' ? 'block' : 'none';
+  document.getElementById('dash-view-stats').style.display = tab === 'stats' ? 'block' : 'none';
+  document.getElementById('dash-tab-overview').classList.toggle('lg-tab-active', tab === 'overview');
+  document.getElementById('dash-tab-stats').classList.toggle('lg-tab-active', tab === 'stats');
+  if (tab === 'overview') renderDashboard();
+  if (tab === 'stats') renderStats();
+}
+
 function switchTournTab(tab) {
   document.getElementById('tourn-view-rounds').style.display = tab === 'rounds' ? 'block' : 'none';
   document.getElementById('tourn-view-events').style.display = tab === 'events' ? 'block' : 'none';
@@ -467,6 +517,7 @@ function showLeagueDetail(id) {
         </div>
         <div class="flex-center gap-8">
           <button class="btn btn-ghost btn-sm" onclick="openModal('modal-league-def','${l.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('leaguedef','${l.id}')">Delete</button>
           <button class="btn btn-primary btn-sm" onclick="openModal('modal-league')">+ Add Round</button>
         </div>
       </div>
@@ -534,10 +585,14 @@ function renderLeagueDefinitions() {
     const wins = rounds.filter(r => r.place === 1).length;
     const net = rounds.reduce((s,r) => s + (r.cash||0) - (r.fee||0), 0);
     const years = [...new Set(rounds.map(r => r.year).filter(Boolean))].sort();
-    return `<div class="course-card">
-      <div class="course-card-header">
+    const headerStyle = l.color ? `background:${l.color};${isLightColor(l.color) ? 'color:var(--text)' : ''}` : '';
+    return `<div class="course-card" style="cursor:pointer" onclick="showLeagueDetail('${l.id}')">
+      <div class="course-card-header" style="${headerStyle}">
         <div class="course-name">${l.name}</div>
         ${l.day || l.location ? `<div class="course-location">${[l.day, l.location].filter(Boolean).join(' · ')}</div>` : ''}
+        <label class="league-color-swatch" onclick="event.stopPropagation()" title="League color">
+          <input type="color" value="${l.color || '#1a1814'}" onchange="setLeagueColor('${l.id}', this.value)">
+        </label>
       </div>
       <div class="course-card-body">
         <div class="course-stats">
@@ -546,14 +601,31 @@ function renderLeagueDefinitions() {
           <div class="course-stat"><div class="course-stat-val" style="font-size:16px;color:${net >= 0 ? 'var(--accent)' : 'var(--red)'}">${fmtMoney(net)}</div><div class="course-stat-lbl">Net</div></div>
           <div class="course-stat"><div class="course-stat-val" style="font-size:14px">${years.length ? years[0] + (years.length > 1 ? '–' + years[years.length-1] : '') : '—'}</div><div class="course-stat-lbl">Seasons</div></div>
         </div>
-        <div class="action-row">
-          <button class="btn btn-ghost btn-sm" onclick="showLeagueDetail('${l.id}')">View Details</button>
-          <button class="btn btn-ghost btn-sm" onclick="openModal('modal-league-def','${l.id}')">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('leaguedef','${l.id}')">✕</button>
-        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function getLeagueColor(id) {
+  const l = state.leagues.find(x => x.id === id);
+  return (l && l.color) || null;
+}
+
+function isLightColor(hex) {
+  if (!hex) return false;
+  const n = hex.replace('#', '');
+  const r = parseInt(n.slice(0,2), 16), g = parseInt(n.slice(2,4), 16), b = parseInt(n.slice(4,6), 16);
+  // Perceived luminance — humans see green as brighter than red or blue
+  return (0.299*r + 0.587*g + 0.114*b) > 150;
+}
+
+function setLeagueColor(id, color) {
+  const l = state.leagues.find(x => x.id === id);
+  if (!l) return;
+  l.color = color;
+  saveState();
+  renderLeagueDefinitions();
+  renderLeagues();
 }
 
 function getLeagueName(id) {
@@ -1111,6 +1183,8 @@ function deleteItem(type, id) {
   } else if (type === 'leaguedef') {
     state.leagues = state.leagues.filter(x => x.id !== id);
     renderLeagueDefinitions();
+    // If deleted from the detail view, return to the league list
+    if (document.getElementById('lg-detail-view').style.display !== 'none') showLeagueList();
   }
   saveState();
   showToast('Deleted');
@@ -1179,7 +1253,9 @@ function ord(n) {
 function tierBadge(tier) {
   if (!tier) return '';
   const map = { 'A-Tier':'badge-gold','B-Tier':'badge-green','C-Tier':'badge-blue','NT':'badge-red','Major':'badge-red','Pro Tour':'badge-red' };
-  return `<span class="badge ${map[tier]||'badge-gray'}">${tier}</span>`;
+  // Display-only shorthand — stored data keeps the full 'A-Tier' values
+  const label = { 'A-Tier':'A','B-Tier':'B','C-Tier':'C' }[tier] || tier;
+  return `<span class="badge ${map[tier]||'badge-gray'}">${label}</span>`;
 }
 
 function divBadge(div) {
@@ -1462,7 +1538,7 @@ function renderLeagues() {
 
   tbody.innerHTML = data.map(r => `<tr class="clickable" onclick="openModal('modal-league','${r.id}')">
     <td class="td-muted">${fmtDate(r.date)}</td>
-    <td>${getLeagueName(r.leagueId)}</td>
+    <td><span class="league-dot" style="background:${getLeagueColor(r.leagueId) || 'var(--border)'}"></span>${getLeagueName(r.leagueId)}</td>
     <td>${getCourseName(r.courseId)}</td>
     <td class="td-muted">${r.par||'—'}</td>
     <td><strong>${r.score||'—'}</strong></td>
