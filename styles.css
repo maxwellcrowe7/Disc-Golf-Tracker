@@ -810,10 +810,25 @@
     background: var(--accent); border-color: var(--accent);
   }
 
+  /* ── MOBILE TOUCH BEHAVIOR ── */
+  /* Taps are just taps: removes the double-tap-to-zoom gesture (and the
+     tap delay browsers add while waiting for a second tap) on controls.
+     Pinch and pan are unaffected. */
+  a, button, input, select, textarea, label, tr.clickable, .lg-tab, .course-card {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   /* ── MOBILE HEADER ── */
   /* Below 700px the header becomes two rows: logo + actions on top,
      nav tabs spread edge-to-edge underneath. No horizontal scrolling. */
   @media (max-width: 700px) {
+    /* iOS auto-zooms into any focused input with text under 16px.
+       !important so this beats the inline font-sizes on a few fields. */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+
     #app-header {
       flex-wrap: wrap;
       padding: 0 12px;
