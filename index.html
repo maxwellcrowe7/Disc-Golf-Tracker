@@ -168,9 +168,7 @@
                 <th class="sortable" data-col="tournament" data-table="trounds">Tournament</th>
                 <th class="sortable" data-col="roundNum" data-table="trounds">Round</th>
                 <th class="sortable" data-col="course" data-table="trounds">Course</th>
-                <th class="sortable" data-col="par" data-table="trounds">Par</th>
-                <th class="sortable" data-col="score" data-table="trounds">Score</th>
-                <th class="sortable" data-col="rel" data-table="trounds">+/−</th>
+                <th class="sortable center" data-col="rel" data-table="trounds">To Par (Score)</th>
                 <th class="sortable" data-col="rating" data-table="trounds">Rating</th>
                 <th></th>
               </tr>
@@ -258,9 +256,7 @@
                 <th class="sortable" data-col="date" data-table="leagues">Date</th>
                 <th class="sortable" data-col="league" data-table="leagues">League</th>
                 <th class="sortable" data-col="course" data-table="leagues">Course</th>
-                <th class="sortable" data-col="par" data-table="leagues">Par</th>
-                <th class="sortable" data-col="score" data-table="leagues">Score</th>
-                <th class="sortable" data-col="rel" data-table="leagues">+/−</th>
+                <th class="sortable center" data-col="rel" data-table="leagues">To Par (Score)</th>
                 <th class="sortable" data-col="place" data-table="leagues">Place</th>
                 <th class="sortable" data-col="field" data-table="leagues">Field</th>
                 <th class="sortable" data-col="fee" data-table="leagues">Fee</th>
@@ -569,25 +565,22 @@
       <div class="form-row">
         <div class="form-group">
           <label>Date *</label>
-          <input id="tr-date" type="date" oninput="document.getElementById('tr-year').value=this.value?this.value.slice(0,4):''">
+          <input id="tr-date" type="date">
         </div>
         <div class="form-group">
-          <label>Season</label>
-          <input id="tr-year" type="text" readonly tabindex="-1"
-            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;" placeholder="—">
+          <label>Tournament *</label>
+          <select id="tr-tournament" onchange="onTRTournamentChange(this.value)"><option value="">Select tournament…</option></select>
         </div>
       </div>
-      <div class="form-group">
-        <label>Tournament *</label>
-        <select id="tr-tournament" onchange="onTRTournamentChange(this.value)"><option value="">Select tournament…</option></select>
-      </div>
-      <div class="form-group">
-        <label>Course *</label>
-        <select id="tr-course"><option value="">Select course…</option></select>
-      </div>
-      <div class="form-group">
-        <label>Round Number *</label>
-        <input id="tr-round-num" type="number" placeholder="e.g. 1" min="1" max="10">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Course *</label>
+          <select id="tr-course"><option value="">Select course…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Round Number *</label>
+          <input id="tr-round-num" type="number" placeholder="e.g. 1" min="1" max="10">
+        </div>
       </div>
       <div class="form-row-3">
         <div class="form-group">
@@ -595,11 +588,11 @@
           <input id="tr-par" type="number" placeholder="e.g. 54" min="1" oninput="updateTRRelScore()">
         </div>
         <div class="form-group">
-          <label>Score (total throws)</label>
+          <label>Score</label>
           <input id="tr-score" type="number" placeholder="e.g. 52" min="1" oninput="updateTRRelScore()">
         </div>
         <div class="form-group">
-          <label>Score (relative to par)</label>
+          <label>To Par</label>
           <input id="tr-rel" type="text" placeholder="—" readonly tabindex="-1"
             style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
         </div>
@@ -631,23 +624,16 @@
       <div class="form-row">
         <div class="form-group">
           <label>Date *</label>
-          <input id="lg-date" type="date" oninput="document.getElementById('lg-year').value=this.value?this.value.slice(0,4):''">
+          <input id="lg-date" type="date">
         </div>
-        <div class="form-group">
-          <label>Season</label>
-          <input id="lg-year" type="text" readonly tabindex="-1"
-            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;" placeholder="—">
-        </div>
-      </div>
-      <div class="form-row">
         <div class="form-group">
           <label>League *</label>
           <select id="lg-league" onchange="prefillLeagueCourse(this.value)"><option value="">Select league…</option></select>
         </div>
-        <div class="form-group">
-          <label>Course *</label>
-          <select id="lg-course"><option value="">Select course…</option></select>
-        </div>
+      </div>
+      <div class="form-group">
+        <label>Course *</label>
+        <select id="lg-course"><option value="">Select course…</option></select>
       </div>
       <div class="form-row-3">
         <div class="form-group">
@@ -655,11 +641,11 @@
           <input id="lg-par" type="number" placeholder="e.g. 54" min="1" oninput="updateLGRelScore()">
         </div>
         <div class="form-group">
-          <label>Score (total throws)</label>
+          <label>Score</label>
           <input id="lg-score" type="number" placeholder="e.g. 51" min="1" oninput="updateLGRelScore()">
         </div>
         <div class="form-group">
-          <label>Score (relative to par)</label>
+          <label>To Par</label>
           <input id="lg-rel" type="text" placeholder="—" readonly tabindex="-1"
             style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
         </div>
@@ -667,20 +653,32 @@
       <div class="form-row-3">
         <div class="form-group">
           <label>Place</label>
-          <input id="lg-place" type="number" placeholder="e.g. 3" min="1">
+          <input id="lg-place" type="number" placeholder="e.g. 3" min="1" oninput="updateLGPlacePct()">
         </div>
         <div class="form-group">
           <label>Field Size</label>
-          <input id="lg-field" type="number" placeholder="e.g. 24" min="1">
+          <input id="lg-field" type="number" placeholder="e.g. 24" min="1" oninput="updateLGPlacePct()">
         </div>
         <div class="form-group">
-          <label>Entry Fee ($)</label>
-          <input id="lg-fee" type="number" placeholder="0.00" step="0.01" min="0">
+          <label>Percentile</label>
+          <input id="lg-pct" type="text" placeholder="—" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
         </div>
       </div>
-      <div class="form-group">
-        <label>Cash Earned ($)</label>
-        <input id="lg-cash" type="number" placeholder="0.00" step="0.01" min="0">
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Entry Fee ($)</label>
+          <input id="lg-fee" type="number" placeholder="0.00" step="0.01" min="0" oninput="updateLGNet()">
+        </div>
+        <div class="form-group">
+          <label>Payout ($)</label>
+          <input id="lg-cash" type="number" placeholder="0.00" step="0.01" min="0" oninput="updateLGNet()">
+        </div>
+        <div class="form-group">
+          <label>Net ($)</label>
+          <input id="lg-net" type="text" placeholder="—" readonly tabindex="-1"
+            style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;text-align:center;">
+        </div>
       </div>
       <div class="form-group">
         <label>Notes</label>
@@ -764,9 +762,28 @@
         <label>Password</label>
         <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSignIn()">
       </div>
+      <div style="text-align:right;margin:-8px 0 10px">
+        <button onclick="doForgotPassword()" style="background:none;border:none;padding:0;cursor:pointer;color:var(--text-muted);font-size:12px;text-decoration:underline;text-underline-offset:2px;font-family:'Barlow',sans-serif">Forgot password?</button>
+      </div>
       <div id="login-msg" style="font-size:13px;min-height:18px;margin-bottom:12px"></div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="doSignIn()">Sign In</button>
       <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="doSignUp()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password reset screen (shown after clicking a reset-email link) -->
+<div id="reset-screen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2200;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="width:100%;max-width:380px">
+    <div class="card-body" style="padding:28px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Set a New Password</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Your reset link signed you in. Choose a new password to finish.</p>
+      <div class="form-group">
+        <label>New Password</label>
+        <input id="reset-password" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSetNewPassword()">
+      </div>
+      <div id="reset-msg" style="font-size:13px;min-height:18px;margin-bottom:12px"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doSetNewPassword()">Save Password</button>
     </div>
   </div>
 </div>

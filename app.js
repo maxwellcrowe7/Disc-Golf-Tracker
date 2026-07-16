@@ -134,6 +134,39 @@ async function doSignOut() {
   location.reload();
 }
 
+async function doForgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) return setLoginMsg('Type your email above first, then tap "Forgot password?" again.', true);
+  setLoginMsg('Sending reset link…');
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  if (error) return setLoginMsg(error.message, true);
+  setLoginMsg('Reset link sent — check your email.');
+}
+
+async function doSetNewPassword() {
+  const pw = document.getElementById('reset-password').value;
+  const msg = document.getElementById('reset-msg');
+  if (pw.length < 6) { msg.style.color = 'var(--red)'; msg.textContent = 'Password must be at least 6 characters.'; return; }
+  msg.style.color = 'var(--text-muted)';
+  msg.textContent = 'Saving…';
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+  document.getElementById('reset-screen').style.display = 'none';
+  showToast('Password updated');
+  // If the app hadn't loaded yet (reset link opened in a fresh tab), start it now
+  if (!sbUser) initApp();
+}
+
+// Opening the app via a password-reset email link signs the user in from the
+// link's token and fires this event — show the new-password form on top.
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    document.getElementById('reset-screen').style.display = 'flex';
+  }
+});
+
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
@@ -332,7 +365,6 @@ function openModal(id, editId, prefillTournamentId) {
       if (r) {
         document.getElementById('modal-tround-title').textContent = 'Edit Round';
         document.getElementById('tr-date').value = r.date || '';
-        document.getElementById('tr-year').value = r.year || '';
         document.getElementById('tr-tournament').value = r.tournamentId || '';
         populateCourseSelectFiltered('tr-course', r.tournamentId);
         document.getElementById('tr-course').value = r.courseId || '';
@@ -346,7 +378,6 @@ function openModal(id, editId, prefillTournamentId) {
     } else {
       document.getElementById('modal-tround-title').textContent = 'Add Tournament Round';
       clearForm(['tr-date','tr-round-num','tr-par','tr-score','tr-rating','tr-notes']);
-      document.getElementById('tr-year').value = '';
       document.getElementById('tr-rel').value = '—';
       document.getElementById('tr-rel').style.color = 'var(--text-muted)';
       document.getElementById('tr-course').value = '';
@@ -356,7 +387,6 @@ function openModal(id, editId, prefillTournamentId) {
         const _pt = state.tournaments.find(x => x.id === prefillTournamentId);
         if (_pt && _pt.date) {
           document.getElementById('tr-date').value = _pt.date;
-          document.getElementById('tr-year').value = _pt.year || (_pt.date ? _pt.date.slice(0,4) : '');
         }
         if (_pt && _pt.courses && _pt.courses.length === 1) {
           document.getElementById('tr-course').value = _pt.courses[0];
@@ -375,7 +405,6 @@ function openModal(id, editId, prefillTournamentId) {
       if (r) {
         document.getElementById('modal-league-title').textContent = 'Edit League Round';
         document.getElementById('lg-date').value = r.date || '';
-        document.getElementById('lg-year').value = r.year || '';
         document.getElementById('lg-league').value = r.leagueId || '';
         document.getElementById('lg-course').value = r.courseId || '';
         document.getElementById('lg-par').value = r.par || '';
@@ -385,16 +414,20 @@ function openModal(id, editId, prefillTournamentId) {
         document.getElementById('lg-field').value = r.field || '';
         document.getElementById('lg-fee').value = r.fee != null ? r.fee : '';
         document.getElementById('lg-cash').value = r.cash != null ? r.cash : '';
+        updateLGPlacePct();
+        updateLGNet();
         document.getElementById('lg-notes').value = r.notes || '';
       }
     } else {
       document.getElementById('modal-league-title').textContent = 'Add League Round';
       clearForm(['lg-date','lg-par','lg-score','lg-place','lg-field','lg-fee','lg-cash','lg-notes']);
-      document.getElementById('lg-year').value = '';
       document.getElementById('lg-league').value = '';
       document.getElementById('lg-course').value = '';
-      document.getElementById('lg-rel').value = '—';
-      document.getElementById('lg-rel').style.color = 'var(--text-muted)';
+      ['lg-rel','lg-pct','lg-net'].forEach(fid => {
+        const el = document.getElementById(fid);
+        el.value = '—';
+        el.style.color = 'var(--text-muted)';
+      });
     }
   }
 
@@ -545,14 +578,12 @@ function showLeagueDetail(id) {
         ${rounds.length ? `
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Date</th><th>Course</th><th>Par</th><th>Score</th><th>+/−</th><th>Place</th><th>Field</th><th>Fee</th><th>Cash</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Course</th><th class="center">To Par (Score)</th><th>Place</th><th>Field</th><th>Fee</th><th>Cash</th><th></th></tr></thead>
             <tbody>
               ${rounds.map(r => `<tr class="clickable" onclick="openModal('modal-league','${r.id}')">
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getCourseName(r.courseId)}</td>
-                <td class="td-muted">${r.par||'—'}</td>
-                <td><strong>${r.score||'—'}</strong></td>
-                <td class="${relScoreClass(r.score,r.par)}">${relScore(r.score,r.par)}</td>
+                <td class="center">${scoreToPar(r.score, r.par)}</td>
                 <td>${placeDisplay(r.place)}</td>
                 <td class="td-muted">${r.field||'—'}</td>
                 <td class="td-muted">${r.fee != null ? fmtMoney(r.fee) : '—'}</td>
@@ -963,7 +994,7 @@ function saveTRound() {
   if (!tid || !cid) { showToast('Tournament and course are required'); return; }
 
   const dateVal = document.getElementById('tr-date').value;
-  const yearVal = document.getElementById('tr-year').value || (dateVal ? dateVal.slice(0,4) : '');
+  const yearVal = dateVal ? dateVal.slice(0,4) : '';
   const roundNumVal = +document.getElementById('tr-round-num').value || null;
 
   // Duplicate round check: same tournament + same round number already exists (not editing that exact round)
@@ -1015,7 +1046,7 @@ function saveLeague() {
   if (!leagueId || !cid) { showToast('League and course are required'); return; }
 
   const dateVal = document.getElementById('lg-date').value;
-  const yearVal = document.getElementById('lg-year').value || (dateVal ? dateVal.slice(0,4) : '');
+  const yearVal = dateVal ? dateVal.slice(0,4) : '';
 
   const obj = {
     id: state.editingId || uid(),
@@ -1084,6 +1115,25 @@ function updateLGRelScore() {
   if (diff === 0) { el.value = 'E'; el.style.color = 'var(--text)'; }
   else if (diff < 0) { el.value = diff; el.style.color = 'var(--accent)'; }
   else { el.value = '+' + diff; el.style.color = 'var(--text)'; }
+}
+
+function updateLGPlacePct() {
+  const place = parseInt(document.getElementById('lg-place').value);
+  const field = parseInt(document.getElementById('lg-field').value);
+  const el = document.getElementById('lg-pct');
+  if (!place || !field) { el.value = '—'; el.style.color = 'var(--text-muted)'; return; }
+  el.value = 'Top ' + Math.round(place / field * 100) + '%';
+  el.style.color = 'var(--text)';
+}
+
+function updateLGNet() {
+  const feeRaw = document.getElementById('lg-fee').value;
+  const cashRaw = document.getElementById('lg-cash').value;
+  const el = document.getElementById('lg-net');
+  if (feeRaw === '' && cashRaw === '') { el.value = '—'; el.style.color = 'var(--text-muted)'; return; }
+  const net = (parseFloat(cashRaw) || 0) - (parseFloat(feeRaw) || 0);
+  el.value = (net < 0 ? '-$' : '$') + Math.abs(net).toFixed(2);
+  el.style.color = net > 0 ? 'var(--accent)' : (net < 0 ? 'var(--red)' : 'var(--text)');
 }
 
 function prefillLeagueCourse(leagueId) {
@@ -1211,11 +1261,27 @@ function getTournamentName(id) {
   return t ? t.name : 'Unknown';
 }
 
+// Detail tables show this many rows before offering "See more"
+const DETAIL_ROW_CAP = 8;
+
+function seeMoreButton(total) {
+  if (total <= DETAIL_ROW_CAP) return '';
+  return `<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:6px" onclick="toggleExtraRows(this)">See more (${total - DETAIL_ROW_CAP})</button>`;
+}
+
+function toggleExtraRows(btn) {
+  const rows = btn.closest('.table-wrap').querySelectorAll('tr.extra-row');
+  const expand = btn.dataset.expanded !== '1';
+  rows.forEach(r => r.style.display = expand ? '' : 'none');
+  btn.dataset.expanded = expand ? '1' : '0';
+  btn.textContent = expand ? 'See less' : `See more (${rows.length})`;
+}
+
 // Combined "61 (-7)" score cell — implies the par without its own column
 function scoreToPar(score, par) {
   if (!score) return '—';
   if (!par) return `<strong>${score}</strong>`;
-  return `<strong>${score}</strong> <span class="${relScoreClass(score, par)}" style="margin-left:5px">(${relScore(score, par)})</span>`;
+  return `<strong class="${relScoreClass(score, par)}">${relScore(score, par)}</strong> <span style="margin-left:5px;color:var(--text-muted)">(${score})</span>`;
 }
 
 function relScore(score, par) {
@@ -1444,16 +1510,14 @@ function showTournamentDetail(id) {
         ${rounds.length ? `
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Round</th><th>Date</th><th>Course</th><th>Par</th><th>Score</th><th>+/−</th><th>Rating</th><th></th></tr></thead>
+            <thead><tr><th>Round</th><th>Date</th><th>Course</th><th class="center">To Par (Score)</th><th>Rating</th><th></th></tr></thead>
             <tbody>
               ${rounds.map(r => `
               <tr class="clickable" onclick="openModal('modal-tround','${r.id}')">
                 <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum || '—'}</td>
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getCourseName(r.courseId)}</td>
-                <td class="td-muted">${r.par||'—'}</td>
-                <td><strong>${r.score||'—'}</strong></td>
-                <td class="${relScoreClass(r.score,r.par)}">${relScore(r.score,r.par)}</td>
+                <td class="center">${scoreToPar(r.score, r.par)}</td>
                 <td>${r.rating ? `<strong>${r.rating}</strong>` : '—'}</td>
                 <td class="action-row" onclick="event.stopPropagation()">
                   <button class="btn btn-danger btn-sm delete-btn" onclick="deleteItem('tround','${r.id}')">✕</button>
@@ -1509,7 +1573,7 @@ function renderTRounds() {
 
   const tbody = document.getElementById('trounds-tbody');
   if (!data.length) {
-    tbody.innerHTML = `<tr class="no-data-row"><td colspan="9">No rounds yet.</td></tr>`;
+    tbody.innerHTML = `<tr class="no-data-row"><td colspan="7">No rounds yet.</td></tr>`;
     return;
   }
 
@@ -1518,9 +1582,7 @@ function renderTRounds() {
     <td>${getTournamentName(r.tournamentId)}</td>
     <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum || '—'}</td>
     <td>${getCourseName(r.courseId)}</td>
-    <td class="td-muted">${r.par||'—'}</td>
-    <td><strong>${r.score||'—'}</strong></td>
-    <td class="${relScoreClass(r.score,r.par)}">${relScore(r.score,r.par)}</td>
+    <td class="center">${scoreToPar(r.score, r.par)}</td>
     <td>${r.rating ? `<span class="badge badge-blue">${r.rating}</span>` : '—'}</td>
     <td class="action-row" onclick="event.stopPropagation()">
       <button class="btn btn-danger btn-sm delete-btn" onclick="deleteItem('tround','${r.id}')">✕</button>
@@ -1549,7 +1611,7 @@ function renderLeagues() {
 
   const tbody = document.getElementById('leagues-tbody');
   if (!data.length) {
-    tbody.innerHTML = `<tr class="no-data-row"><td colspan="11">No league rounds yet.</td></tr>`;
+    tbody.innerHTML = `<tr class="no-data-row"><td colspan="9">No league rounds yet.</td></tr>`;
     return;
   }
 
@@ -1557,9 +1619,7 @@ function renderLeagues() {
     <td class="td-muted">${fmtDate(r.date)}</td>
     <td><span class="league-dot" style="background:${getLeagueColor(r.leagueId) || 'var(--border)'}"></span>${getLeagueName(r.leagueId)}</td>
     <td>${getCourseName(r.courseId)}</td>
-    <td class="td-muted">${r.par||'—'}</td>
-    <td><strong>${r.score||'—'}</strong></td>
-    <td class="${relScoreClass(r.score,r.par)}">${relScore(r.score,r.par)}</td>
+    <td class="center">${scoreToPar(r.score, r.par)}</td>
     <td>${placeDisplay(r.place)}</td>
     <td class="td-muted">${r.field||'—'}</td>
     <td class="td-muted">${r.fee != null ? fmtMoney(r.fee) : '—'}</td>
@@ -1654,7 +1714,7 @@ function showCourseDetail(id) {
           <table>
             <thead><tr><th style="width:18%">Date</th><th style="width:47%">Tournament</th><th style="width:20%">Tier</th><th class="center" style="width:15%">Place</th></tr></thead>
             <tbody>
-              ${tourneys.map(t => `<tr onclick="showTournamentDetail('${t.id}')" style="cursor:pointer">
+              ${tourneys.map((t, i) => `<tr class="${i >= DETAIL_ROW_CAP ? 'extra-row' : ''}" onclick="showTournamentDetail('${t.id}')" style="cursor:pointer${i >= DETAIL_ROW_CAP ? ';display:none' : ''}">
                 <td class="td-muted">${fmtDate(t.date)}</td>
                 <td>${t.name}</td>
                 <td>${tierBadge(t.tier)}</td>
@@ -1662,15 +1722,16 @@ function showCourseDetail(id) {
               </tr>`).join('')}
             </tbody>
           </table>
+          ${seeMoreButton(tourneys.length)}
         </div>` : ''}
 
         ${trounds.length ? `
         <p class="section-title">Tournament Rounds (${trounds.length})</p>
         <div class="table-wrap mb-16">
           <table>
-            <thead><tr><th style="width:18%">Date</th><th style="width:32%">Tournament</th><th class="center" style="width:12%">Round</th><th class="center" style="width:23%">Score (To Par)</th><th class="center" style="width:15%">Rating</th></tr></thead>
+            <thead><tr><th style="width:18%">Date</th><th style="width:32%">Tournament</th><th class="center" style="width:12%">Round</th><th class="center" style="width:23%">To Par (Score)</th><th class="center" style="width:15%">Rating</th></tr></thead>
             <tbody>
-              ${trounds.map(r => `<tr class="clickable" onclick="openModal('modal-tround','${r.id}')">
+              ${trounds.map((r, i) => `<tr class="clickable ${i >= DETAIL_ROW_CAP ? 'extra-row' : ''}" onclick="openModal('modal-tround','${r.id}')"${i >= DETAIL_ROW_CAP ? ' style="display:none"' : ''}>
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getTournamentName(r.tournamentId)}</td>
                 <td class="center" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum || '—'}</td>
@@ -1679,15 +1740,16 @@ function showCourseDetail(id) {
               </tr>`).join('')}
             </tbody>
           </table>
+          ${seeMoreButton(trounds.length)}
         </div>` : ''}
 
         ${lrounds.length ? `
         <p class="section-title">League Rounds (${lrounds.length})</p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th style="width:18%">Date</th><th style="width:44%">League</th><th class="center" style="width:23%">Score (To Par)</th><th class="center" style="width:15%">Place</th></tr></thead>
+            <thead><tr><th style="width:18%">Date</th><th style="width:44%">League</th><th class="center" style="width:23%">To Par (Score)</th><th class="center" style="width:15%">Place</th></tr></thead>
             <tbody>
-              ${lrounds.slice(0,8).map(r => `<tr class="clickable" onclick="openModal('modal-league','${r.id}')">
+              ${lrounds.map((r, i) => `<tr class="clickable ${i >= DETAIL_ROW_CAP ? 'extra-row' : ''}" onclick="openModal('modal-league','${r.id}')"${i >= DETAIL_ROW_CAP ? ' style="display:none"' : ''}>
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getLeagueName(r.leagueId)}</td>
                 <td class="center">${scoreToPar(r.score, r.par)}</td>
@@ -1695,6 +1757,7 @@ function showCourseDetail(id) {
               </tr>`).join('')}
             </tbody>
           </table>
+          ${seeMoreButton(lrounds.length)}
         </div>` : ''}
       </div>
     </div>`;
