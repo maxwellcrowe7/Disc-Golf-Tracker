@@ -285,6 +285,9 @@
 
   tbody tr.clickable { cursor: pointer; }
 
+  /* Center a column (header + values): numbers center, words stay left */
+  th.center, td.center { text-align: center; }
+
   .td-muted { color: var(--text-muted); font-size: 13px; }
 
   /* ── BADGES ── */

@@ -141,6 +141,10 @@ function uid() {
 // Sort state per table
 const sortState = { tournaments: {}, trounds: {}, leagues: {} };
 
+// Which detail views are open (used to refresh/return to them after edits)
+let _detailTournamentId = null;
+let _detailCourseId = null;
+
 
 // ═══ SORTING ═══
 document.addEventListener('DOMContentLoaded', () => {
@@ -417,12 +421,11 @@ function openModal(id, editId, prefillTournamentId) {
         document.getElementById('modal-course-title').textContent = 'Edit Course';
         document.getElementById('c-name').value = c.name || '';
         document.getElementById('c-location').value = c.location || '';
-        document.getElementById('c-holes').value = c.holes || '';
         document.getElementById('c-notes').value = c.notes || '';
       }
     } else {
       document.getElementById('modal-course-title').textContent = 'Add Course';
-      clearForm(['c-name','c-location','c-holes','c-notes']);
+      clearForm(['c-name','c-location','c-notes']);
     }
   }
 }
@@ -1003,6 +1006,7 @@ function saveTRound() {
   } else {
     renderTRounds();
   }
+  refreshCourseDetailIfOpen();
 }
 
 function saveLeague() {
@@ -1040,6 +1044,7 @@ function saveLeague() {
   renderLeagues();
   renderLeagueDefinitions();
   renderDashboard();
+  refreshCourseDetailIfOpen();
 }
 
 function showCourseDropdown(val) {
@@ -1122,7 +1127,6 @@ function saveCourse() {
     id: state.editingId || uid(),
     name,
     location: document.getElementById('c-location').value.trim(),
-    holes: +document.getElementById('c-holes').value || null,
     notes: document.getElementById('c-notes').value.trim()
   };
 
@@ -1170,16 +1174,20 @@ function deleteItem(type, id) {
     renderTournaments();
     renderDashboard();
     if (_detailTournamentId) showTournamentDetail(_detailTournamentId); else renderTRounds();
+    refreshCourseDetailIfOpen();
   } else if (type === 'league') {
     state.leagueRounds = state.leagueRounds.filter(x => x.id !== id);
     renderLeagues();
     renderLeagueDefinitions();
     renderDashboard();
+    refreshCourseDetailIfOpen();
   } else if (type === 'course') {
     state.courses = state.courses.filter(x => x.id !== id);
     renderCourses();
     renderTournaments();
     renderTRounds();
+    // If deleted from the detail view, return to the course list
+    if (document.getElementById('course-detail-view').style.display !== 'none') showCourseList();
   } else if (type === 'leaguedef') {
     state.leagues = state.leagues.filter(x => x.id !== id);
     renderLeagueDefinitions();
@@ -1201,6 +1209,13 @@ function getCourseName(id) {
 function getTournamentName(id) {
   const t = state.tournaments.find(x => x.id === id);
   return t ? t.name : 'Unknown';
+}
+
+// Combined "61 (-7)" score cell — implies the par without its own column
+function scoreToPar(score, par) {
+  if (!score) return '—';
+  if (!par) return `<strong>${score}</strong>`;
+  return `<strong>${score}</strong> <span class="${relScoreClass(score, par)}" style="margin-left:5px">(${relScore(score, par)})</span>`;
 }
 
 function relScore(score, par) {
@@ -1353,7 +1368,9 @@ function renderTournaments() {
       : `<span style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text-muted)">${roundsLogged}</span>`;
     const profit = t.prize != null ? (t.prize - (t.fee||0) - (t.caddy||0)) : null;
     return `<tr class="clickable" onclick="showTournamentDetail('${t.id}')">
-      <td><strong>${t.name}</strong>${t.url ? ` <a href="${t.url}" target="_blank" onclick="event.stopPropagation()" style="color:var(--accent);font-size:12px;margin-left:4px">↗</a>` : ''}</td>
+      <td>${t.url
+        ? `<a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open event page" style="color:inherit"><strong style="text-decoration:underline;text-underline-offset:2px">${t.name}</strong></a>`
+        : `<strong>${t.name}</strong>`}</td>
       <td class="td-muted">${fmtDate(t.date)}</td>
       <td class="td-muted">${t.location||'—'}</td>
       <td>${tierBadge(t.tier)}</td>
@@ -1431,7 +1448,7 @@ function showTournamentDetail(id) {
             <tbody>
               ${rounds.map(r => `
               <tr class="clickable" onclick="openModal('modal-tround','${r.id}')">
-                <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum ? 'R' + r.roundNum : '—'}</td>
+                <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum || '—'}</td>
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getCourseName(r.courseId)}</td>
                 <td class="td-muted">${r.par||'—'}</td>
@@ -1499,7 +1516,7 @@ function renderTRounds() {
   tbody.innerHTML = data.map(r => `<tr class="clickable" onclick="openModal('modal-tround','${r.id}')">
     <td class="td-muted">${fmtDate(r.date)}</td>
     <td>${getTournamentName(r.tournamentId)}</td>
-    <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum ? 'R' + r.roundNum : '—'}</td>
+    <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum || '—'}</td>
     <td>${getCourseName(r.courseId)}</td>
     <td class="td-muted">${r.par||'—'}</td>
     <td><strong>${r.score||'—'}</strong></td>
@@ -1570,7 +1587,7 @@ function renderCourses() {
   const sorted = [...state.courses].sort((a,b) => a.name.localeCompare(b.name));
   grid.innerHTML = sorted.map(c => {
     const d = courseRoundsData(c.id);
-    return `<div class="course-card">
+    return `<div class="course-card" style="cursor:pointer" onclick="showCourseDetail('${c.id}')">
       <div class="course-card-header">
         <div class="course-name">${c.name}</div>
         ${c.location ? `<div class="course-location">${c.location}</div>` : ''}
@@ -1578,8 +1595,8 @@ function renderCourses() {
       <div class="course-card-body">
         <div class="course-stats">
           <div class="course-stat">
-            <div class="course-stat-val">${d.tourneyRounds}</div>
-            <div class="course-stat-lbl">Tournament Rounds</div>
+            <div class="course-stat-val">${d.tourneys.length} <span style="color:var(--text-muted)">(${d.tourneyRounds})</span></div>
+            <div class="course-stat-lbl">Tournaments (Rounds)</div>
           </div>
           <div class="course-stat">
             <div class="course-stat-val">${d.leagueRounds}</div>
@@ -1597,12 +1614,6 @@ function renderCourses() {
             <div class="course-stat-lbl">Best / Worst</div>
           </div>
         </div>
-        ${d.tourneys.length ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Tourneys: ${d.tourneys.slice(0,3).join(', ')}${d.tourneys.length > 3 ? ` +${d.tourneys.length-3} more` : ''}</div>` : ''}
-        <div class="action-row">
-          <button class="btn btn-ghost btn-sm" onclick="showCourseDetail('${c.id}')">View Details</button>
-          <button class="btn btn-ghost btn-sm" onclick="openModal('modal-course','${c.id}')">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('course','${c.id}')">✕</button>
-        </div>
       </div>
     </div>`;
   }).join('');
@@ -1611,6 +1622,7 @@ function renderCourses() {
 function showCourseDetail(id) {
   const c = state.courses.find(x => x.id === id);
   if (!c) return;
+  _detailCourseId = id;
   const d = courseRoundsData(c.id);
   const trounds = state.tRounds.filter(r => r.courseId === id).sort((a,b) => (b.date||'').localeCompare(a.date||''));
   const lrounds = state.leagueRounds.filter(r => r.courseId === id).sort((a,b) => (b.date||'').localeCompare(a.date||''));
@@ -1621,9 +1633,12 @@ function showCourseDetail(id) {
       <div class="card-header">
         <div>
           <div class="card-title">${c.name}</div>
-          ${c.location ? `<div style="font-size:13px;color:var(--text-muted);margin-top:2px">${c.location}${c.holes ? ' · ' + c.holes + ' holes' : ''}</div>` : ''}
+          ${c.location ? `<div style="font-size:13px;color:var(--text-muted);margin-top:2px">${c.location}</div>` : ''}
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-course','${c.id}')">Edit</button>
+        <div class="flex-center gap-8">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('modal-course','${c.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('course','${c.id}')">Delete</button>
+        </div>
       </div>
       <div class="card-body">
         <div class="grid-4 mb-16">
@@ -1634,52 +1649,49 @@ function showCourseDetail(id) {
         </div>
 
         ${tourneys.length ? `
-        <p class="section-title">Tournaments at this Course</p>
+        <p class="section-title">Tournaments (${tourneys.length})</p>
         <div class="table-wrap mb-16">
           <table>
-            <thead><tr><th>Tournament</th><th>Date</th><th>Tier</th><th>Place</th></tr></thead>
+            <thead><tr><th style="width:18%">Date</th><th style="width:47%">Tournament</th><th style="width:20%">Tier</th><th class="center" style="width:15%">Place</th></tr></thead>
             <tbody>
-              ${tourneys.map(t => `<tr onclick="showPage('tournaments');setTimeout(()=>showTournamentDetail('${t.id}'),50)" style="cursor:pointer">
-                <td><strong>${t.name}</strong></td>
+              ${tourneys.map(t => `<tr onclick="showTournamentDetail('${t.id}')" style="cursor:pointer">
                 <td class="td-muted">${fmtDate(t.date)}</td>
+                <td>${t.name}</td>
                 <td>${tierBadge(t.tier)}</td>
-                <td>${placeDisplay(t.place)}</td>
+                <td class="center">${placeDisplay(t.place)}</td>
               </tr>`).join('')}
             </tbody>
           </table>
         </div>` : ''}
 
         ${trounds.length ? `
-        <p class="section-title">Tournament Rounds Here</p>
+        <p class="section-title">Tournament Rounds (${trounds.length})</p>
         <div class="table-wrap mb-16">
           <table>
-            <thead><tr><th>Date</th><th>Tournament</th><th>Par</th><th>Score</th><th>+/-</th><th>Rating</th></tr></thead>
+            <thead><tr><th style="width:18%">Date</th><th style="width:32%">Tournament</th><th class="center" style="width:12%">Round</th><th class="center" style="width:23%">Score (To Par)</th><th class="center" style="width:15%">Rating</th></tr></thead>
             <tbody>
-              ${trounds.map(r => `<tr>
+              ${trounds.map(r => `<tr class="clickable" onclick="openModal('modal-tround','${r.id}')">
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getTournamentName(r.tournamentId)}</td>
-                <td class="td-muted">${r.par||'—'}</td>
-                <td><strong>${r.score||'—'}</strong></td>
-                <td class="${relScoreClass(r.score,r.par)}">${relScore(r.score,r.par)}</td>
-                <td>${r.rating ? `<span class="badge badge-blue">${r.rating}</span>` : '—'}</td>
+                <td class="center" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text-muted)">${r.roundNum || '—'}</td>
+                <td class="center">${scoreToPar(r.score, r.par)}</td>
+                <td class="center">${r.rating ? `<span class="badge badge-blue">${r.rating}</span>` : '—'}</td>
               </tr>`).join('')}
             </tbody>
           </table>
         </div>` : ''}
 
         ${lrounds.length ? `
-        <p class="section-title">League Rounds Here (${lrounds.length})</p>
+        <p class="section-title">League Rounds (${lrounds.length})</p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Date</th><th>League</th><th>Par</th><th>Score</th><th>+/-</th><th>Place</th></tr></thead>
+            <thead><tr><th style="width:18%">Date</th><th style="width:44%">League</th><th class="center" style="width:23%">Score (To Par)</th><th class="center" style="width:15%">Place</th></tr></thead>
             <tbody>
-              ${lrounds.slice(0,8).map(r => `<tr>
+              ${lrounds.slice(0,8).map(r => `<tr class="clickable" onclick="openModal('modal-league','${r.id}')">
                 <td class="td-muted">${fmtDate(r.date)}</td>
                 <td>${getLeagueName(r.leagueId)}</td>
-                <td class="td-muted">${r.par||'—'}</td>
-                <td><strong>${r.score||'—'}</strong></td>
-                <td class="${relScoreClass(r.score,r.par)}">${relScore(r.score,r.par)}</td>
-                <td>${placeDisplay(r.place)}</td>
+                <td class="center">${scoreToPar(r.score, r.par)}</td>
+                <td class="center">${placeDisplay(r.place)}</td>
               </tr>`).join('')}
             </tbody>
           </table>
@@ -1693,8 +1705,17 @@ function showCourseDetail(id) {
 }
 
 function showCourseList() {
+  _detailCourseId = null;
   document.getElementById('courses-list-view').style.display = 'block';
   document.getElementById('course-detail-view').style.display = 'none';
+}
+
+// After a round is edited or deleted while the course detail is on screen
+// (e.g. via a modal opened from it), re-render it so its tables stay current
+function refreshCourseDetailIfOpen() {
+  if (_detailCourseId && document.getElementById('course-detail-view').style.display !== 'none') {
+    showCourseDetail(_detailCourseId);
+  }
 }
 
 // ═══════════════════════════════════════════════
