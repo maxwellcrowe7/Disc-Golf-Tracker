@@ -508,7 +508,7 @@
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label>Date</label>
-              <input id="tir-date" type="date" oninput="document.getElementById('tir-year').value=this.value?this.value.slice(0,4):''">
+              <input id="tir-date" type="date" oninput="document.getElementById('tir-year').value=this.value?this.value.slice(0,4):'';syncSuggestions('tir-date-suggest',this.value)">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label>Season</label>
@@ -516,9 +516,11 @@
                 style="background:var(--surface2);cursor:default;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-align:center;" placeholder="—">
             </div>
           </div>
+          <div id="tir-date-suggest" class="suggest-chips" style="display:none;margin:-4px 0 12px"></div>
           <div class="form-group" style="margin-bottom:12px">
             <label>Course</label>
-            <select id="tir-course"><option value="">Select course…</option></select>
+            <select id="tir-course" onchange="syncSuggestions('tir-course-suggest',this.value)"><option value="">Select course…</option></select>
+            <div id="tir-course-suggest" class="suggest-chips" style="display:none"></div>
           </div>
           <div class="form-row-3" style="margin-bottom:12px">
             <div class="form-group" style="margin-bottom:0">
@@ -565,7 +567,8 @@
       <div class="form-row">
         <div class="form-group">
           <label>Date *</label>
-          <input id="tr-date" type="date">
+          <input id="tr-date" type="date" oninput="syncSuggestions('tr-date-suggest',this.value)">
+          <div id="tr-date-suggest" class="suggest-chips" style="display:none"></div>
         </div>
         <div class="form-group">
           <label>Tournament *</label>
@@ -575,7 +578,8 @@
       <div class="form-row">
         <div class="form-group">
           <label>Course *</label>
-          <select id="tr-course"><option value="">Select course…</option></select>
+          <select id="tr-course" onchange="syncSuggestions('tr-course-suggest',this.value)"><option value="">Select course…</option></select>
+          <div id="tr-course-suggest" class="suggest-chips" style="display:none"></div>
         </div>
         <div class="form-group">
           <label>Round Number *</label>

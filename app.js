@@ -316,6 +316,15 @@ function openModal(id, editId, prefillTournamentId) {
   if (id === 'modal-tournament') {
     populateCourseChecklist([]);
       const cf = document.getElementById('t-courses-filter'); if (cf) cf.value = '';
+    // Reset state left over from a previous "add" (locked fields, Done button, inline rounds)
+    _inlineTournamentId = null;
+    document.getElementById('t-rounds-section').style.display = 'none';
+    document.getElementById('t-inline-round-form').style.display = 'none';
+    document.getElementById('t-add-round-btn').style.display = 'block';
+    document.getElementById('t-rounds-list').innerHTML = '';
+    document.getElementById('t-save-btn').textContent = editId ? 'Save Changes' : 'Save Tournament';
+    document.getElementById('t-save-btn').onclick = saveTournament;
+    document.getElementById('modal-tournament').querySelector('.modal-body').classList.remove('form-locked');
     if (editId) {
       const t = state.tournaments.find(x => x.id === editId);
       if (t) {
@@ -344,14 +353,6 @@ function openModal(id, editId, prefillTournamentId) {
       clearForm(['t-name','t-date','t-days','t-location','t-tier','t-field','t-rounds','t-place','t-url','t-fee','t-prize','t-caddy','t-notes']);
       document.getElementById('t-year').value = '';
       document.getElementById('t-end-date').value = '';
-      _inlineTournamentId = null;
-      document.getElementById('t-rounds-section').style.display = 'none';
-      document.getElementById('t-inline-round-form').style.display = 'none';
-      document.getElementById('t-add-round-btn').style.display = 'block';
-      document.getElementById('t-rounds-list').innerHTML = '';
-      document.getElementById('t-save-btn').textContent = 'Save Tournament';
-      document.getElementById('t-save-btn').onclick = saveTournament;
-      document.getElementById('modal-tournament').querySelector('.modal-body').classList.remove('form-locked');
       document.getElementById('t-division').value = 'MPO';
     }
   }
@@ -374,6 +375,7 @@ function openModal(id, editId, prefillTournamentId) {
         document.getElementById('tr-rating').value = r.rating || '';
         document.getElementById('tr-notes').value = r.notes || '';
         updateTRRelScore();
+        prefillRoundFromTournament('tr', r.tournamentId, false);
       }
     } else {
       document.getElementById('modal-tround-title').textContent = 'Add Tournament Round';
@@ -381,19 +383,11 @@ function openModal(id, editId, prefillTournamentId) {
       document.getElementById('tr-rel').value = '—';
       document.getElementById('tr-rel').style.color = 'var(--text-muted)';
       document.getElementById('tr-course').value = '';
-      if (prefillTournamentId) {
-        document.getElementById('tr-tournament').value = prefillTournamentId;
-        populateCourseSelectFiltered('tr-course', prefillTournamentId);
-        const _pt = state.tournaments.find(x => x.id === prefillTournamentId);
-        if (_pt && _pt.date) {
-          document.getElementById('tr-date').value = _pt.date;
-        }
-        if (_pt && _pt.courses && _pt.courses.length === 1) {
-          document.getElementById('tr-course').value = _pt.courses[0];
-        }
-      } else {
-        document.getElementById('tr-tournament').value = '';
-      }
+      // Default to the tournament we're adding from, else the Rounds tab's tournament filter
+      const filterEl = document.getElementById('filter-tr-tourn');
+      const tid = prefillTournamentId || (filterEl && filterEl.value) || '';
+      document.getElementById('tr-tournament').value = tid;
+      prefillRoundFromTournament('tr', tid, true);
     }
   }
 
@@ -754,12 +748,80 @@ function getSelectedCourses() {
 }
 
 function onTRTournamentChange(tid) {
-  populateCourseSelectFiltered('tr-course', tid);
-  // If only one course, pre-select it
-  const t = state.tournaments.find(x => x.id === tid);
-  if (t && t.courses && t.courses.length === 1) {
-    document.getElementById('tr-course').value = t.courses[0];
+  prefillRoundFromTournament('tr', tid, !state.editingId);
+}
+
+// Every day of a tournament as YYYY-MM-DD, based on start date + number of days
+function tournamentDates(t) {
+  if (!t || !t.date) return [];
+  const days = Math.max(1, t.numDays || 1);
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(t.date + 'T00:00:00');
+    d.setDate(d.getDate() + i);
+    out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
   }
+  return out;
+}
+
+function nextRoundNum(tid) {
+  const used = state.tRounds.filter(r => r.tournamentId === tid).map(r => r.roundNum).filter(Boolean);
+  let next = 1;
+  while (used.includes(next)) next++;
+  return next;
+}
+
+// Render clickable suggestion chips under a field; clicking one fills the field
+function renderSuggestions(boxId, inputId, items) {
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  if (items.length < 2) { box.innerHTML = ''; box.style.display = 'none'; return; }
+  const cur = document.getElementById(inputId).value;
+  box.style.display = 'flex';
+  box.innerHTML = items.map(it =>
+    `<button type="button" class="suggest-chip${it.v === cur ? ' selected' : ''}" data-v="${it.v}" onclick="pickSuggestion('${boxId}','${inputId}',this.dataset.v)">${it.l}</button>`
+  ).join('');
+}
+
+function pickSuggestion(boxId, inputId, val) {
+  const el = document.getElementById(inputId);
+  el.value = val;
+  el.dispatchEvent(new Event('input'));
+  syncSuggestions(boxId, val);
+}
+
+function syncSuggestions(boxId, val) {
+  document.querySelectorAll('#' + boxId + ' .suggest-chip').forEach(b => b.classList.toggle('selected', b.dataset.v === val));
+}
+
+// Fill a round form (prefix 'tr' = round modal, 'tir' = inline form) from its tournament.
+// fill=false only refreshes the course list and suggestions (used when editing an existing round).
+function prefillRoundFromTournament(prefix, tid, fill) {
+  const ids = prefix === 'tr'
+    ? { date: 'tr-date', course: 'tr-course', num: 'tr-round-num' }
+    : { date: 'tir-date', course: 'tir-course', num: 'tir-roundnum' };
+  const t = state.tournaments.find(x => x.id === tid);
+  const prevCourse = document.getElementById(ids.course).value;
+  populateCourseSelectFiltered(ids.course, tid);
+  document.getElementById(ids.course).value = prevCourse;
+  if (document.getElementById(ids.course).value !== prevCourse) document.getElementById(ids.course).value = '';
+
+  const dates = tournamentDates(t);
+  const courseIds = (t && t.courses) || [];
+  if (fill) {
+    // Single-day event → that date; multi-day → leave blank and offer the event days
+    document.getElementById(ids.date).value = dates.length === 1 ? dates[0] : '';
+    document.getElementById(ids.date).dispatchEvent(new Event('input'));
+    document.getElementById(ids.course).value = courseIds.length === 1 ? courseIds[0] : '';
+    document.getElementById(ids.num).value = t ? nextRoundNum(tid) : '';
+  }
+  const wk = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  renderSuggestions(prefix + '-date-suggest', ids.date, dates.map((d, i) => {
+    const day = new Date(d + 'T00:00:00');
+    return { v: d, l: `Day ${i + 1} · ${wk[day.getDay()]} ${fmtDate(d).replace(/, \d{4}$/, '')}` };
+  }));
+  renderSuggestions(prefix + '-course-suggest', ids.course,
+    courseIds.map(id => ({ v: id, l: getCourseName(id) })));
 }
 
 function populateCourseSelectFiltered(selectId, tournamentId) {
@@ -822,6 +884,9 @@ function saveTournament() {
     populateTournamentFilters();
     renderTournaments();
     renderDashboard();
+    if (_detailTournamentId === obj.id && document.getElementById('tourn-panel-overlay').classList.contains('open')) {
+      showTournamentDetail(obj.id);
+    }
   } else {
     state.tournaments.push(obj);
     _inlineTournamentId = obj.id;
@@ -879,23 +944,9 @@ function showInlineRoundForm() {
   const t = state.tournaments.find(x => x.id === _inlineTournamentId);
   document.getElementById('t-inline-round-form').style.display = 'block';
   document.getElementById('t-add-round-btn').style.display = 'none';
-  // Populate course select — filtered to this tournament's courses
-  populateCourseSelectFiltered('tir-course', _inlineTournamentId);
-  // Pre-fill date from tournament
-  if (t && t.date) {
-    document.getElementById('tir-date').value = t.date;
-    document.getElementById('tir-year').value = t.year || t.date.slice(0,4);
-  }
-  // Pre-fill course if only one
-  if (t && t.courses && t.courses.length === 1) {
-    document.getElementById('tir-course').value = t.courses[0];
-  }
-  // Auto-set round number to next available
-  const existing = state.tRounds.filter(r => r.tournamentId === _inlineTournamentId);
-  const usedNums = existing.map(r => r.roundNum).filter(Boolean);
-  let next = 1;
-  while (usedNums.includes(next)) next++;
-  document.getElementById('tir-roundnum').value = next;
+  // Date, course and round number from the tournament
+  prefillRoundFromTournament('tir', _inlineTournamentId, true);
+  if (!document.getElementById('tir-year').value && t) document.getElementById('tir-year').value = t.year || '';
   // Reset score fields
   document.getElementById('tir-par').value = '';
   document.getElementById('tir-score').value = '';
@@ -1525,7 +1576,7 @@ function showTournamentDetail(id) {
               </tr>`).join('')}
             </tbody>
           </table>
-        </div>` : '<p style="color:var(--text-muted);font-size:14px">No rounds logged yet. <button class="btn btn-primary btn-sm" onclick="openModal(\'modal-tround\')">Add Round</button></p>'}
+        </div>` : '<p style="color:var(--text-muted);font-size:14px">No rounds logged yet.</p>'}
 
         ${t.notes ? `<div class="mt-8" style="font-size:13px;color:var(--text-muted);background:var(--surface2);padding:10px 12px;border-radius:6px;margin-top:16px">${t.notes}</div>` : ''}
       </div>

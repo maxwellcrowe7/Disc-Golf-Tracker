@@ -791,6 +791,17 @@
   }
   .course-chip button:hover { color: var(--red); }
 
+  /* Quick-pick suggestions under round date / course fields */
+  .suggest-chips { flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .suggest-chip {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 9px; font-size: 12px; font-weight: 600;
+    font-family: inherit; cursor: pointer; white-space: nowrap;
+  }
+  .suggest-chip:hover { border-color: var(--accent-light); }
+  .suggest-chip.selected { background: var(--accent-pale); color: var(--accent); border-color: var(--accent-light); }
+
   /* Locks tournament form fields after initial save */
   .form-locked input:not(#tir-roundnum):not(#tir-date):not(#tir-year):not(#tir-par):not(#tir-score):not(#tir-rel):not(#tir-rating):not(#t-courses-filter),
   .form-locked select:not(#tir-course),
