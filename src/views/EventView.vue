@@ -1,71 +1,141 @@
 <script setup>
-// Interim event page (step 4): details, rounds/matches, and the edit/log sheets.
-// The full ticket / travel / receipt / scorecard design lands in step 5.
-import { computed } from 'vue'
-import PageHead from '../components/PageHead.vue'
+import { ref, computed, watch } from 'vue'
 import Icon from '../components/Icon.vue'
-import ScoreMark from '../components/ScoreMark.vue'
-import StatusChip from '../components/StatusChip.vue'
-import { state, eventById, courseById } from '../data/store.js'
-import { fmtRange, fmtDow, money, ord, FORMAT } from '../lib/format.js'
-import { matchResult } from '../lib/matchplay.js'
+import Plate from '../components/Plate.vue'
+import RegTicket from '../components/event/RegTicket.vue'
+import StatusStations from '../components/event/StatusStations.vue'
+import TravelCard from '../components/event/TravelCard.vue'
+import TripReceipt from '../components/event/TripReceipt.vue'
+import EventScorecard from '../components/event/EventScorecard.vue'
+import MatchList from '../components/event/MatchList.vue'
+import { state, eventById, courseById, plateNumber } from '../data/store.js'
+import { fmtRange, coords, ord, money, FORMAT, splitLast } from '../lib/format.js'
+import { isUpcoming } from '../lib/season.js'
+import { avgRating } from '../lib/stats.js'
+import { matchRecord, holeTally } from '../lib/matchplay.js'
 import { openSheet } from '../lib/sheet.js'
 import EventSheet from '../components/sheets/EventSheet.vue'
-import RoundSheet from '../components/sheets/RoundSheet.vue'
-import MatchSheet from '../components/sheets/MatchSheet.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const e = computed(() => eventById(props.id))
-const rounds = computed(() => state.rounds.filter((r) => r.event_id === props.id).sort((a, b) => (a.round_number || 0) - (b.round_number || 0)))
-const matches = computed(() => state.matches.filter((m) => m.event_id === props.id).sort((a, b) => a.match_number - b.match_number))
+const up = computed(() => e.value && isUpcoming(e.value, state.today))
+const plateCourse = computed(() => (e.value?.courses[0] && courseById(e.value.courses[0].course_id)) || { id: 'ev-' + props.id, name: e.value?.name || '', terrain: 'mixed' })
+const title = computed(() => splitLast(e.value?.name || ''))
+const year = computed(() => (e.value && e.value.start_date.slice(0, 4) !== state.today.slice(0, 4) ? ', ' + e.value.start_date.slice(0, 4) : ''))
+const courses = computed(() => (e.value?.courses || []).map((x) => ({ ...x, c: courseById(x.course_id) })).filter((x) => x.c))
 const isMatch = computed(() => e.value?.format === 'match_play')
-const courseName = (id) => courseById(id)?.name || 'No course'
+const hhmm = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` : `${m} min`)
+
+// Result strip numbers.
+const rounds = computed(() => state.rounds.filter((r) => r.event_id === props.id))
+const matches = computed(() => state.matches.filter((m) => m.event_id === props.id))
+const avg = computed(() => avgRating(rounds.value.filter((r) => !r.is_team)))
+const rec = computed(() => matchRecord(matches.value))
+const holesWon = computed(() => matches.value.reduce((a, m) => a + (m.holes ? holeTally(m.holes).W : 0), 0))
+const suffix = (n) => ord(n).slice(String(n).length)
+
+// The stamp lands once when the status changes on this page.
+const slam = ref(false)
+watch(() => e.value?.status, (s, old) => { if (old && s !== old) slam.value = true })
 </script>
 
 <template>
   <template v-if="e">
-    <PageHead :kick="[fmtRange(e.start_date, e.end_date) + (e.start_date.slice(0, 4) !== state.today.slice(0, 4) ? ', ' + e.start_date.slice(0, 4) : ''), e.city || '']" :lines="[e.name]">
-      <button class="icon-btn" aria-label="Edit event" @click="openSheet(EventSheet, { id: e.id })"><Icon name="edit" size="sm" /></button>
-    </PageHead>
-    <div class="detail-grid" style="margin-top: 0">
+    <div class="banner">
+      <Plate :course="plateCourse" :dot="0.4" marks no-scale />
+      <div class="floating">
+        <a class="icon-btn" aria-label="Back" @click="$router.back()"><Icon name="chevL" /></a>
+        <button class="icon-btn" aria-label="Edit event" @click="openSheet(EventSheet, { id: e.id })"><Icon name="edit" size="sm" /></button>
+      </div>
+      <div class="legend-box">
+        <div class="lh">
+          <span class="mono">{{ e.courses[0] ? plateNumber(plateCourse.id) + ' · ' + plateCourse.name : FORMAT[e.format] }}</span>
+          <span class="mono">{{ e.lat != null ? coords(e.lat, e.lng) : e.city || '' }}</span>
+        </div>
+        <h2 data-sentinel>{{ title.head }} <em>{{ title.last }}</em></h2>
+        <div class="lf">
+          <span class="meta" style="color: var(--ink-2); font-weight: 600">{{ fmtRange(e.start_date, e.end_date) }}{{ year }}<template v-if="e.city"> · {{ e.city }}</template></span>
+          <span class="chips"><span class="chip">{{ e.pdga ? 'PDGA ' + (e.tier || '') : 'Non-PDGA' }}</span><span class="chip">{{ FORMAT[e.format] }}<template v-if="e.division"> · {{ e.division }}</template></span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
       <div class="col">
-        <div class="card">
-          <div class="ph"><h3>{{ isMatch ? 'Matches' : 'Rounds' }}</h3>
-            <button class="btn sm" @click="openSheet(isMatch ? MatchSheet : RoundSheet, { eventId: e.id })"><Icon name="plus" size="xs" />{{ isMatch ? 'Match' : 'Round' }}</button>
+        <template v-if="up">
+          <RegTicket :event="e" :today="state.today" :slam="slam" />
+          <StatusStations :event="e" :today="state.today" />
+        </template>
+        <template v-else>
+          <div v-if="e.status === 'played'" class="nudge-card">
+            <span class="ic-tile"><Icon name="note" size="sm" /></span>
+            <div><b>Almost recorded</b><span>Log the remaining {{ isMatch ? 'matches' : 'rounds' }} and notes to finish it.</span></div>
           </div>
-          <div class="pb" style="padding-top: 6px">
-            <template v-if="isMatch">
-              <button v-for="m in matches" :key="m.id" class="lrow" style="padding: 11px 0" @click="openSheet(MatchSheet, { id: m.id })">
-                <span class="res" :class="matchResult(m)">{{ matchResult(m) }}</span>
-                <div class="body"><div class="name" style="font-size: 14.5px">Match {{ m.match_number }}{{ m.opponent ? ' · vs ' + m.opponent : '' }}</div><div class="meta">{{ courseName(m.course_id) }}{{ m.holes ? ' · ' + m.holes.length + ' holes tracked' : '' }}</div></div>
-                <Icon name="chevR" size="sm" class="chev" />
-              </button>
-              <p v-if="!matches.length" class="muted">No matches logged.</p>
-            </template>
-            <template v-else>
-              <button v-for="r in rounds" :key="r.id" class="lrow" style="padding: 11px 0" @click="openSheet(RoundSheet, { id: r.id })">
-                <span class="mono" style="width: 30px">R{{ r.round_number }}</span>
-                <div class="body"><div class="name" style="font-size: 14.5px">{{ courseName(r.course_id) }}</div><div class="meta">{{ fmtDow(r.played_on) }} · {{ r.score }} thr · par {{ r.par }}{{ r.rating ? ' · ' + r.rating : '' }}</div></div>
-                <div class="end"><ScoreMark v-if="r.score != null && r.par != null" :score="r.score" :par="r.par" /></div>
-              </button>
-              <p v-if="!rounds.length" class="muted">No rounds logged.</p>
-            </template>
+          <div class="card result-strip">
+            <div><span class="mono">{{ isMatch ? 'Team finish' : 'Finish' }}</span><span class="num">{{ e.place || '—' }}<sup v-if="e.place">{{ suffix(e.place) }}</sup></span><span class="meta">{{ e.field_size ? `of ${e.field_size} ${e.field_unit}` : 'Add from Edit' }}</span></div>
+            <div v-if="isMatch"><span class="mono">Your record</span><span class="num">{{ rec.w }}–{{ rec.l }}–{{ rec.p }}</span><span class="meta">W–L–P{{ holesWon ? ` · ${holesWon} holes won` : '' }}</span></div>
+            <div v-else><span class="mono">Avg rating</span><span class="num">{{ avg || '—' }}</span><span class="meta">{{ avg ? `${rounds.filter((r) => r.rating && !r.is_team).length} rated rounds` : e.format !== 'singles' ? 'Team rounds aren’t rated' : 'No ratings yet' }}</span></div>
+            <div><span class="mono">Payout</span><span class="num" :style="e.payout ? { color: 'var(--good)' } : {}">{{ e.payout ? money(e.payout) : '$0' }}</span><span class="meta">{{ e.payout ? 'cashed' : 'no cash' }}</span></div>
+          </div>
+          <MatchList v-if="isMatch" :event="e" />
+          <EventScorecard v-else :event="e" :slam="slam" />
+          <div class="card">
+            <div class="ph"><h3>Field notes</h3></div>
+            <div class="pb">
+              <p v-if="e.notes" class="notes-q">“{{ e.notes }}”</p>
+              <button v-else class="btn block" @click="openSheet(EventSheet, { id: e.id })"><Icon name="note" size="sm" />Add notes</button>
+            </div>
+          </div>
+        </template>
+
+        <div v-if="up" class="card">
+          <div class="ph"><h3>{{ courses.length > 1 ? courses.length + ' courses' : 'Course' }}</h3><span class="mono">Tap for the plate</span></div>
+          <div class="pb" style="padding-top: 8px">
+            <RouterLink v-for="x in courses" :key="x.course_id" class="course-card" :to="`/course/${x.course_id}`">
+              <Plate :course="x.c" lite class="thumb" />
+              <div style="flex: 1; min-width: 0"><span class="mono" style="font-size: 9.5px">{{ plateNumber(x.course_id) }}</span><b style="display: block; font-size: 15.5px; font-weight: 650">{{ x.c.name }}</b><div class="meta">{{ x.c.holes }} holes<template v-if="x.c.city"><span class="dot"></span>{{ x.c.city }}</template></div></div>
+              <span v-if="x.drive_minutes != null" class="meta" style="color: var(--ink-2); font-weight: 650"><Icon name="car" size="xs" />{{ hhmm(x.drive_minutes) }}</span>
+              <Icon v-else name="chevR" size="sm" />
+            </RouterLink>
+            <p v-if="!courses.length" class="meta">No courses yet — add them from Edit.</p>
+          </div>
+        </div>
+
+        <div v-if="up && (e.partners.length || e.team_name)" class="card">
+          <div class="ph"><h3>{{ isMatch ? 'Team' : e.partners.length > 1 ? 'Teammates' : 'Partner' }}</h3></div>
+          <div class="pb">
+            <div v-for="n in (isMatch ? [e.team_name] : e.partners)" :key="n" class="kv">
+              <span class="ic-tile" style="font-weight: 700; font-size: 12px; --c: var(--plum)">{{ n.split(' ').map((w) => w[0]).join('').slice(0, 2) }}</span>
+              <div><div class="v">{{ n }}</div><div class="k">{{ isMatch ? `${e.holes_per_match || 12}-hole matches · holes won decide it` : 'Best shot · one team score' }}</div></div>
+            </div>
           </div>
         </div>
       </div>
+
       <div class="col">
-        <div class="card">
-          <div class="ph"><h3>Details</h3><StatusChip :event="e" /></div>
-          <div class="pb">
-            <div class="kv"><div><div class="k">Format</div><div class="v">{{ FORMAT[e.format] }}{{ e.partners.length ? ' · with ' + e.partners.join(', ') : '' }}</div></div></div>
-            <div class="kv"><div><div class="k">Sanctioning</div><div class="v">{{ e.pdga ? 'PDGA ' + (e.tier || '') : 'Non-PDGA' }}{{ e.division ? ' · ' + e.division : '' }}</div></div></div>
-            <div class="kv"><div><div class="k">Courses</div><div class="v">{{ e.courses.map((x) => courseName(x.course_id)).join(', ') || '—' }}</div></div></div>
-            <div v-if="e.entry_fee != null" class="kv"><div><div class="k">Entry</div><div class="v">{{ money(e.entry_fee) }}{{ e.fee_split > 1 ? ` · split ${e.fee_split} ways` : '' }}{{ e.had_caddy ? ` · caddy ${money(e.caddy_fee || 0)}` : '' }}</div></div></div>
-            <div v-if="e.place" class="kv"><div><div class="k">Finish</div><div class="v">{{ ord(e.place) }}{{ e.field_size ? ` of ${e.field_size} ${e.field_unit}` : '' }}{{ e.payout ? ' · won ' + money(e.payout) : '' }}</div></div></div>
-            <div v-if="e.lodging" class="kv"><div><div class="k">Stay</div><div class="v">{{ e.lodging.type }} · {{ e.lodging.name }}{{ e.lodging.nights ? ` · ${e.lodging.nights} night${e.lodging.nights === 1 ? '' : 's'}` : '' }}</div></div></div>
-            <p v-if="e.notes" class="notes-q" style="margin-top: 12px">“{{ e.notes }}”</p>
+        <template v-if="up">
+          <TravelCard :event="e" />
+          <TripReceipt :event="e" :today="state.today" />
+        </template>
+        <template v-else>
+          <StatusStations :event="e" :today="state.today" />
+          <div v-if="e.partners.length || e.team_name" class="card">
+            <div class="ph"><h3>{{ isMatch ? 'Team' : e.partners.length > 1 ? 'Teammates' : 'Partner' }}</h3></div>
+            <div class="pb"><div v-for="n in (isMatch ? [e.team_name] : e.partners)" :key="n" class="kv"><span class="ic-tile" style="font-weight: 700; font-size: 12px; --c: var(--plum)">{{ n.split(' ').map((w) => w[0]).join('').slice(0, 2) }}</span><div class="v">{{ n }}</div></div></div>
           </div>
-        </div>
+          <div class="card">
+            <div class="ph"><h3>{{ courses.length > 1 ? courses.length + ' courses' : 'Course' }}</h3></div>
+            <div class="pb" style="padding-top: 8px">
+              <RouterLink v-for="x in courses" :key="x.course_id" class="course-card" :to="`/course/${x.course_id}`">
+                <Plate :course="x.c" lite class="thumb" />
+                <div style="flex: 1; min-width: 0"><b style="display: block; font-size: 15.5px; font-weight: 650">{{ x.c.name }}</b><div class="meta">{{ x.c.holes }} holes<template v-if="x.c.city"><span class="dot"></span>{{ x.c.city }}</template></div></div>
+                <Icon name="chevR" size="sm" />
+              </RouterLink>
+              <p v-if="!courses.length" class="meta">No courses linked.</p>
+            </div>
+          </div>
+          <TripReceipt :event="e" :today="state.today" />
+        </template>
       </div>
     </div>
   </template>
