@@ -63,7 +63,7 @@ All tables: `id uuid pk`, `user_id uuid default auth.uid()`, `created_at`, `upda
 | `dg_event_courses` | event_id, course_id, drive_minutes, drive_miles (from lodging or home) |
 | `dg_lodging` | event_id, type, name, address, lat, lng, nights, cost, split, drive_minutes, drive_miles (from home) |
 | `dg_rounds` | **kind** (`tournament`/`league`/`casual`), event_id, league_id, course_id, played_on, round_number, layout_note, **par** (always on the round), score, rating, place, field_size, fee, payout, is_team (bool), notes |
-| `dg_matches` | event_id, match_number, opponent, opponent_team, holes text (`W`/`P`/`L` per hole) |
+| `dg_matches` | event_id, match_number, course_id, opponent, opponent_team, holes text (`W`/`P`/`L` per hole), hole_count, result (`W`/`P`/`L` — derived from holes, or entered directly when holes weren't tracked), notes |
 | `dg_push_subscriptions` | endpoint, keys jsonb, device_label |
 
 **Par rule:** par always lives on the round. A course marked `fixed` pre-fills its par (home course). A course marked `varies` (e.g. Blue Ribbon Pines) asks every time, offering recent pars played there as quick picks.
