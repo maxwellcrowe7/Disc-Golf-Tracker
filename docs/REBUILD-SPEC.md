@@ -57,16 +57,16 @@ All tables: `id uuid pk`, `user_id uuid default auth.uid()`, `created_at`, `upda
 |---|---|
 | `dg_profiles` | name, pdga_number, home_label, home_lat, home_lng, settings jsonb |
 | `dg_rating_history` | effective_date, rating, source (`manual` / `pdga_import`) — unique per date |
-| `dg_courses` | name, city, state, lat, lng, holes, terrain, **layout_mode** (`fixed` / `varies`), **fixed_par** (only when fixed), length_ft, notes |
+| `dg_courses` | name, city, state, lat, lng, holes, terrain, length_ft, notes — **no par on courses** |
 | `dg_leagues` | name, day_time, home_course_id, color, notes, active |
 | `dg_events` | name, start_date, end_date, city, lat, lng, pdga (bool), tier, division, **format** (`singles`/`doubles`/`triples`/`team_doubles`/`match_play`), **status** (`interested`/`planning`/`registered`/`waitlisted`/`withdrew`/`played`/`recorded`), waitlist_pos, reg_opens_on, remind (bool), event_url, entry_fee, fee_split, **had_caddy** (bool), caddy_fee, rounds_planned, holes_per_match, team_name, partners text[], place, field_size, field_unit (`players`/`teams`), payout, home_drive_minutes, home_drive_miles (day trips; trips with lodging use `dg_lodging`), notes |
 | `dg_event_courses` | event_id, course_id, drive_minutes, drive_miles (from lodging or home) |
 | `dg_lodging` | event_id, type, name, address, lat, lng, nights, cost, split, drive_minutes, drive_miles (from home) |
-| `dg_rounds` | **kind** (`tournament`/`league`/`casual`), event_id, league_id, course_id, played_on, round_number, layout_note, **par** (always on the round), score, rating, place, field_size, fee, payout, is_team (bool), notes |
+| `dg_rounds` | **kind** (`tournament`/`league`/`casual`), event_id, league_id, course_id, played_on, round_number, **par** (entered with every round), score, rating, place, field_size, fee, payout, is_team (bool), notes |
 | `dg_matches` | event_id, match_number, course_id, opponent, opponent_team, holes text (`W`/`P`/`L` per hole), hole_count, result (`W`/`P`/`L` — derived from holes, or entered directly when holes weren't tracked), notes |
 | `dg_push_subscriptions` | endpoint, keys jsonb, device_label |
 
-**Par rule:** par always lives on the round. A course marked `fixed` pre-fills its par (home course). A course marked `varies` (e.g. Blue Ribbon Pines) asks every time, offering recent pars played there as quick picks.
+**Par rule:** par is entered with every round. Courses never carry a par or a layout setting — even a course with one unchanging layout gets its par typed on each round.
 
 **Writes are per row** (insert/update/delete one record) — no more whole-blob overwrites.
 
@@ -75,7 +75,7 @@ One-time script reads the existing `app_state` JSON and writes the new tables:
 - `tournaments` → `dg_events` (status `recorded`; `year` dropped; `numDays` → end_date; `prize` → payout; `caddy` → had_caddy + caddy_fee; `courses` → `dg_event_courses`)
 - `tRounds` → `dg_rounds` (kind `tournament`)
 - `leagues` → `dg_leagues` · `leagueRounds` → `dg_rounds` (kind `league`)
-- `courses` → `dg_courses` (layout_mode `varies` until set; geocoded from city for the map)
+- `courses` → `dg_courses` (geocoded from city for the map)
 - `pdgaRating` → one `dg_rating_history` row dated the migration day
 - Dry-run report first (counts + anything that didn't map), then write.
 
@@ -99,7 +99,7 @@ One sortable table of every round (tournament, league, casual). Filters: season,
 Season recap · Tournaments (scorecard rows by year, with filters/search/sort) · Leagues (each league: rounds, wins, podiums, avg finish %, net, season-by-season breakdown, rounds list) · Stats (section 6).
 
 ### Courses — the atlas
-Plate grid with search · course page: plate banner, field notes (rounds, avg to par, best, avg rating, best/worst rating), score spread, round history, events here, notes, layout mode + fixed par. Add / edit / delete course.
+Plate grid with search · course page: plate banner, field notes (rounds, avg to par, best, avg rating, best/worst rating), score spread, round history, events here, notes. Add / edit / delete course.
 
 ### Leagues
 Create / edit / delete league (name, day & time, home course, color, notes). League page as described under Results.
@@ -111,7 +111,7 @@ Player name, PDGA number + profile link, home location (for drive times), rating
 Email + password sign in, create account, forgot password, set new password — restyled to the atlas look.
 
 ### Log sheets (mobile bottom sheet / desktop dialog)
-Tournament round (event locked, next unlogged round, course auto/suggested, date from event days, par per round rules, score pad, rating, notes) · League round (home course + last league night, place/field with live percentile, fee/payout with live net) · Match (opponent, team, tap-per-hole W/P/L) · Event (link autofill, format-specific fields, PDGA tier/division, status, fees, caddy toggle, registration date) · Course · League.
+Tournament round (event locked, next unlogged round, course auto/suggested, date from event days, par typed in (blank every time), score pad, rating, notes) · League round (home course + last league night, place/field with live percentile, fee/payout with live net) · Match (opponent, team, tap-per-hole W/P/L) · Event (link autofill, format-specific fields, PDGA tier/division, status, fees, caddy toggle, registration date) · Course · League.
 **Guards:** "discard unsaved changes?" when a dirty sheet is dismissed (including swipe-down), duplicate-round warning, delete confirmations.
 
 ## 6. Stats (reviewed — all kept)
@@ -170,7 +170,7 @@ Notes: autofill and the ratings import read PDGA / Disc Golf Scene pages and may
 | League rounds list + filters + sorting | League page + Rounds page |
 | Add / edit / delete league round, live percentile + net | League round sheet |
 | Courses grid (tourney/league rounds, avg/best/worst rating) | Atlas + course page |
-| Add / edit / delete course (name, location, notes) | Course sheet (+ lat/lng, holes, terrain, layout mode, fixed par) |
+| Add / edit / delete course (name, location, notes) | Course sheet (+ lat/lng, holes, terrain) |
 | Course detail (tournaments, rounds, league rounds, see-more) | Course page |
 | Unsaved-changes guard | Sheet guard |
 | Delete confirmations | Kept |

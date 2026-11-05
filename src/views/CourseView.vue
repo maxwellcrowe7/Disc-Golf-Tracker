@@ -32,7 +32,7 @@ const link = (r) => (r.event_id ? `/event/${r.event_id}` : '/results/leagues')
         <h2 data-sentinel>{{ title.head }} <em>{{ title.last }}</em></h2>
         <div class="lf">
           <span class="meta" style="color: var(--ink-2); font-weight: 600">{{ c.city }}{{ c.state ? ', ' + c.state : '' }}<template v-if="c.length_ft"> · {{ c.length_ft.toLocaleString() }} ft</template></span>
-          <span class="chips"><span class="chip">{{ c.holes }} holes</span><span class="chip">{{ c.layout_mode === 'fixed' ? 'Par ' + c.fixed_par : 'Layout varies' }}</span></span>
+          <span class="chips"><span class="chip">{{ c.holes }} holes</span></span>
         </div>
       </div>
     </div>

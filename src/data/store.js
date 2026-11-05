@@ -31,12 +31,10 @@ function minutes(t) {
 
 // Translate the design-sample data into the table shapes.
 export function demoData() {
-  const fixed = new Set(['c1', 'c2'])
   const courses = demo.COURSES.map((c) => {
     const [city, st] = c.city.split(', ')
     return {
       id: c.id, name: c.name, city, state: st, lat: c.lat, lng: c.lng, holes: c.holes, terrain: c.terrain,
-      layout_mode: fixed.has(c.id) ? 'fixed' : 'varies', fixed_par: fixed.has(c.id) ? c.par : null,
       length_ft: +c.length.replace(/\D/g, ''), notes: '',
     }
   })

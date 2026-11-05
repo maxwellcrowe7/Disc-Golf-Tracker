@@ -44,26 +44,16 @@ export function mapLegacy(legacy, { today }) {
   const tournaments = legacy.tournaments || [], tRounds = legacy.tRounds || []
   const leagues = legacy.leagues || [], leagueRounds = legacy.leagueRounds || [], oldCourses = legacy.courses || []
 
-  // ── courses (+ layout inference: one par across every round there → fixed layout) ──
+  // ── courses (par lives on each round, never on the course) ──
   const courseId = new Map(oldCourses.map((c) => [c.id, stableId('course:' + c.id)]))
-  const parsAt = new Map()
-  for (const r of [...tRounds, ...leagueRounds]) {
-    const par = inRange(num(r.par), 18, 200)
-    if (r.courseId && par) (parsAt.get(r.courseId) || parsAt.set(r.courseId, []).get(r.courseId)).push(par)
-  }
   const courses = oldCourses.map((c) => {
-    const pars = parsAt.get(c.id) || []
-    const distinct = [...new Set(pars)]
-    const fixed = pars.length >= 2 && distinct.length === 1
-    if (fixed) note('layout-fixed', `${c.name}: every round was par ${distinct[0]} (${pars.length} rounds) — set as a fixed layout`)
-    else if (distinct.length > 1) note('layout-varies', `${c.name}: pars ${distinct.sort((a, b) => a - b).join(', ')} across ${pars.length} rounds — layout varies`)
     const holes = num(c.holes)
     if (holes != null && inRange(holes, 1, 54) == null) note('bad-holes', `${c.name}: hole count ${holes} out of range — left blank`)
     const loc = splitLocation(c.location)
     if (!loc.city) note('no-location', `${c.name}: no city — add one so it can go on the map`)
     return {
       id: courseId.get(c.id), legacy_id: c.id, name: clean(c.name) || 'Unnamed course', ...loc,
-      holes: inRange(holes, 1, 54), terrain: 'mixed', layout_mode: fixed ? 'fixed' : 'varies', fixed_par: fixed ? distinct[0] : null,
+      holes: inRange(holes, 1, 54), terrain: 'mixed',
       notes: clean(c.notes),
     }
   })

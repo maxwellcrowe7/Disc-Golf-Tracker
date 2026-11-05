@@ -49,10 +49,7 @@ describe('stable ids', () => {
 
 describe('courses', () => {
   it('splits city and state', () => expect(out.courses[0]).toMatchObject({ city: 'Lansing', state: 'MI' }))
-  it('infers a fixed layout when every round there had the same par', () => {
-    expect(out.courses.find((c) => c.legacy_id === 'home')).toMatchObject({ layout_mode: 'fixed', fixed_par: 57 })
-    expect(out.courses.find((c) => c.legacy_id === 'brp')).toMatchObject({ layout_mode: 'varies', fixed_par: null })
-  })
+  it('never puts a par on the course', () => expect(out.courses.every((c) => !('fixed_par' in c) && !('layout_mode' in c))).toBe(true))
   it('flags a course with no city', () => expect(codes).toContain('no-location'))
 })
 

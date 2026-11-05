@@ -43,7 +43,7 @@ const plates = computed(() => {
         <span class="pl">{{ plateNumber(p.c.id) }}</span>
         <b>{{ p.c.name }}</b>
         <span class="st3"><ScoreMark v-if="p.avg !== null" :diff="+p.avg.toFixed(1)" /><span v-else class="mono">—</span></span>
-        <span class="sub">{{ p.c.city }}{{ p.c.state ? ', ' + p.c.state : '' }} · {{ p.c.holes }} holes · {{ p.c.layout_mode === 'fixed' ? 'par ' + p.c.fixed_par : 'layout varies' }} · {{ p.rounds }} rds</span>
+        <span class="sub">{{ p.c.city }}{{ p.c.state ? ', ' + p.c.state : '' }} · {{ p.c.holes }} holes · {{ p.rounds }} rds</span>
       </div>
     </RouterLink>
   </div>

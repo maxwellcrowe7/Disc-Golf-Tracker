@@ -31,10 +31,6 @@ describe('dates', () => {
 describe('demo data in table shape', () => {
   const d = demoData()
   it('keeps par on every round', () => expect(d.rounds.every((r) => typeof r.par === 'number')).toBe(true))
-  it('marks fixed-layout courses with a par and varying ones without', () => {
-    expect(d.courses.find((c) => c.id === 'c1')).toMatchObject({ layout_mode: 'fixed', fixed_par: 57 })
-    expect(d.courses.find((c) => c.id === 'c5')).toMatchObject({ layout_mode: 'varies', fixed_par: null })
-  })
   it('parses drive times into minutes', () => expect(d.events.find((e) => e.id === 'e2').home_drive_minutes).toBe(485))
   it('computes course stats', () => {
     const rs = d.rounds.filter((r) => r.course_id === 'c2')

@@ -11,7 +11,7 @@ if (!file) {
 }
 
 const today = new Date().toISOString().slice(0, 10)
-const { report, courses, events, rounds, leagues } = mapLegacy(JSON.parse(readFileSync(file, 'utf8')), { today })
+const { report, events, rounds, leagues } = mapLegacy(JSON.parse(readFileSync(file, 'utf8')), { today })
 
 console.log('\nOld app                     → New tables')
 console.log(`  ${report.source.courses} courses                 → ${report.counts.courses} dg_courses`)
@@ -22,8 +22,7 @@ console.log(`  ${report.source.leagueRounds} league rounds           → ${repor
 console.log(`  match-point "rounds"      → ${report.counts.matches} dg_matches`)
 console.log(`  current rating            → ${report.counts.ratings} dg_rating_history`)
 
-console.log(`\nCourse layouts: ${courses.filter((c) => c.layout_mode === 'fixed').length} fixed, ${courses.filter((c) => c.layout_mode === 'varies').length} varies`)
-console.log(`League home courses linked: ${leagues.filter((l) => l.home_course_id).length} of ${leagues.length}`)
+console.log(`\nLeague home courses linked: ${leagues.filter((l) => l.home_course_id).length} of ${leagues.length}`)
 console.log(`Event formats: ${[...new Set(events.map((e) => e.format))].map((f) => `${events.filter((e) => e.format === f).length} ${f}`).join(', ')}`)
 console.log(`Event statuses: ${['recorded', 'played'].map((s) => `${events.filter((e) => e.status === s).length} ${s}`).join(', ')}`)
 console.log(`Rated rounds: ${rounds.filter((r) => r.rating).length} · rounds missing a score or par: ${rounds.filter((r) => r.par == null || r.score == null).length}`)

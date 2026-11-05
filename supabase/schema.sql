@@ -48,14 +48,10 @@ create table public.dg_courses (
   lng         double precision,
   holes       smallint check (holes between 1 and 54),
   terrain     text not null default 'mixed' check (terrain in ('wooded', 'open', 'water', 'hilly', 'mixed')),
-  -- 'fixed': one layout, par pre-fills on new rounds. 'varies': par is entered per round.
-  layout_mode text not null default 'varies' check (layout_mode in ('fixed', 'varies')),
-  fixed_par   smallint check (fixed_par between 18 and 200),
   length_ft   integer check (length_ft > 0),
   notes       text,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
-  check (layout_mode = 'varies' or fixed_par is not null),
   unique (user_id, legacy_id)
 );
 
@@ -156,8 +152,7 @@ create table public.dg_rounds (
   course_id    uuid references public.dg_courses(id) on delete set null,
   played_on    date not null,
   round_number smallint,
-  layout_note  text,                 -- e.g. "Blues to longs" on courses whose layout varies
-  par          smallint check (par between 18 and 200),   -- always stored on the round
+  par          smallint check (par between 18 and 200),   -- entered with every round; courses don't carry a par
   score        smallint check (score between 18 and 300),
   rating       smallint check (rating between 400 and 1200),
   place        smallint,
