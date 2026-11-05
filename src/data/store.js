@@ -1,5 +1,5 @@
 // App data, shaped like the dg_ tables in docs/REBUILD-SPEC.md (snake_case, one array per table).
-// Until Supabase is wired up the store is filled from the demo data.
+// Filled from Supabase after sign-in (data/session.js), or from the demo data when Supabase isn't configured.
 import { reactive } from 'vue'
 import * as demo from './demo.js'
 import { isoDate } from '../lib/format.js'
@@ -7,6 +7,10 @@ import { isoDate } from '../lib/format.js'
 export const state = reactive({
   ready: false,
   demo: true,
+  userId: null,
+  email: '',
+  recovery: false, // opened from a password-reset link
+  legacy: null, // the old app's saved data, until it has been imported
   today: isoDate(new Date()),
   profile: { name: '', pdga_number: '', home_label: '', home_lat: null, home_lng: null },
   ratings: [],

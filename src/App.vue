@@ -49,6 +49,8 @@ const logSomething = () => toast('Logging sheets arrive in the next build step')
 </script>
 
 <template>
+  <main v-if="route.meta.bare" class="main bare"><RouterView /></main>
+  <template v-else>
   <div class="app">
     <aside class="sidebar">
       <div v-html="sidebarTopo" style="display: contents" />
@@ -89,6 +91,7 @@ const logSomething = () => toast('Logging sheets arrive in the next build step')
     <button class="fab" aria-label="Log something" @click="logSomething"><Icon name="plus" /></button>
     <RouterLink v-for="n in NAV.slice(2)" :key="n.key" :to="n.to" :class="{ on: section === n.key }"><Icon :name="n.icon" />{{ n.label }}</RouterLink>
   </nav>
+  </template>
 
   <div class="toast" :class="{ show: toastState.show }"><Icon name="check" size="sm" />{{ toastState.msg }}</div>
 </template>
