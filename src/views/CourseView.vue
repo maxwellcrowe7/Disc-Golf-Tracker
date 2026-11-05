@@ -7,6 +7,9 @@ import StatusChip from '../components/StatusChip.vue'
 import { state, courseById, eventById, leagueById, plateNumber } from '../data/store.js'
 import { fmtDateY, coords, ord, splitLast } from '../lib/format.js'
 import { roundsAtCourse, avgToPar, avgRating, bestToPar } from '../lib/stats.js'
+import { openSheet } from '../lib/sheet.js'
+import CourseSheet from '../components/sheets/CourseSheet.vue'
+import RoundSheet from '../components/sheets/RoundSheet.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const c = computed(() => courseById(props.id))
@@ -17,7 +20,6 @@ const events = computed(() => state.events.filter((e) => e.courses.some((x) => x
 
 const label = (r) => (r.event_id ? eventById(r.event_id)?.name : leagueById(r.league_id)?.name) || 'Casual round'
 const sub = (r) => (r.kind === 'tournament' ? `Round ${r.round_number}${r.is_team ? ' · team' : ''}` : r.place ? `${ord(r.place)} of ${r.field_size}` : '')
-const link = (r) => (r.event_id ? `/event/${r.event_id}` : '/results/leagues')
 </script>
 
 <template>
@@ -26,6 +28,7 @@ const link = (r) => (r.event_id ? `/event/${r.event_id}` : '/results/leagues')
       <Plate :course="c" :dot="0.4" marks no-scale />
       <div class="floating">
         <a class="icon-btn" aria-label="Back" @click="$router.back()"><Icon name="chevL" /></a>
+        <button class="icon-btn" aria-label="Edit course" @click="openSheet(CourseSheet, { id: c.id })"><Icon name="edit" size="sm" /></button>
       </div>
       <div class="legend-box">
         <div class="lh"><span class="mono">{{ plateNumber(c.id) }} · {{ c.terrain }}</span><span class="mono">{{ coords(c.lat, c.lng) }}</span></div>
@@ -47,12 +50,12 @@ const link = (r) => (r.event_id ? `/event/${r.event_id}` : '/results/leagues')
     <div class="detail-grid">
       <div class="col">
         <div class="card list">
-          <div class="ph" style="padding-bottom: 10px"><h3>Round history</h3></div>
-          <RouterLink v-for="r in rounds" :key="r.id" class="lrow" :to="link(r)">
+          <div class="ph" style="padding-bottom: 10px"><h3>Round history</h3><button class="btn sm" @click="openSheet(RoundSheet, { courseId: c.id })"><Icon name="plus" size="xs" />Round</button></div>
+          <button v-for="r in rounds" :key="r.id" class="lrow" @click="openSheet(RoundSheet, { id: r.id })">
             <div class="body"><div class="name" style="font-size: 14.5px">{{ label(r) }}</div><div class="meta">{{ fmtDateY(r.played_on) }} · {{ sub(r) }}</div></div>
             <span class="mono">{{ r.rating || '' }}</span>
-            <div class="end"><ScoreMark :score="r.score" :par="r.par" /><small>{{ r.score }} thr · par {{ r.par }}</small></div>
-          </RouterLink>
+            <div class="end"><ScoreMark v-if="r.score != null && r.par != null" :score="r.score" :par="r.par" /><small>{{ r.score }} thr · par {{ r.par }}</small></div>
+          </button>
           <p v-if="!rounds.length" class="muted" style="padding: 16px">No rounds here yet.</p>
         </div>
       </div>

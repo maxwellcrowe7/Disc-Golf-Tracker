@@ -4,7 +4,10 @@ import { useRoute } from 'vue-router'
 import Icon from './components/Icon.vue'
 import { state } from './data/store.js'
 import { topo } from './lib/plate.js'
-import { toastState, toast } from './lib/toast.js'
+import { toastState } from './lib/toast.js'
+import SheetHost from './components/SheetHost.vue'
+import QuickSheet from './components/sheets/QuickSheet.vue'
+import { openSheet } from './lib/sheet.js'
 
 const NAV = [
   { key: 'home', label: 'Home', icon: 'home', to: '/' },
@@ -45,7 +48,7 @@ watch(() => route.fullPath, () => nextTick(() => { placeIndicators(); watchSenti
 onMounted(() => { nextTick(() => { placeIndicators(); watchSentinel() }); addEventListener('resize', placeIndicators) })
 onBeforeUnmount(() => { io?.disconnect(); removeEventListener('resize', placeIndicators) })
 
-const logSomething = () => toast('Logging sheets arrive in the next build step')
+const logSomething = () => openSheet(QuickSheet)
 </script>
 
 <template>
@@ -93,5 +96,6 @@ const logSomething = () => toast('Logging sheets arrive in the next build step')
   </nav>
   </template>
 
+  <SheetHost />
   <div class="toast" :class="{ show: toastState.show }"><Icon name="check" size="sm" />{{ toastState.msg }}</div>
 </template>

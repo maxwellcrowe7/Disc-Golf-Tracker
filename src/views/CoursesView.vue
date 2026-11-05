@@ -7,7 +7,8 @@ import ScoreMark from '../components/ScoreMark.vue'
 import { state, plateNumber } from '../data/store.js'
 import { fmtDate } from '../lib/format.js'
 import { roundsAtCourse, avgToPar } from '../lib/stats.js'
-import { toast } from '../lib/toast.js'
+import { openSheet } from '../lib/sheet.js'
+import CourseSheet from '../components/sheets/CourseSheet.vue'
 
 const q = ref('')
 const states = computed(() => [...new Set(state.courses.map((c) => c.state).filter(Boolean))].join(' · '))
@@ -28,7 +29,7 @@ const plates = computed(() => {
 
 <template>
   <PageHead :kick="[`${state.courses.length} plates`, states]" :lines="['Course', '*atlas*']">
-    <button class="icon-btn" aria-label="Add course" @click="toast('Adding courses arrives with the log sheets')"><Icon name="plus" size="sm" /></button>
+    <button class="icon-btn" aria-label="Add course" @click="openSheet(CourseSheet, {})"><Icon name="plus" size="sm" /></button>
   </PageHead>
 
   <label class="search"><Icon name="search" size="sm" /><input v-model="q" placeholder="Search by name or city" autocomplete="off" /></label>
