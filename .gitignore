@@ -6,3 +6,4 @@ dist/
 # private data exports used for the migration dry run
 dg-tracker-*.json
 private/
+.claude/

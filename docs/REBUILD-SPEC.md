@@ -59,7 +59,7 @@ All tables: `id uuid pk`, `user_id uuid default auth.uid()`, `created_at`, `upda
 | `dg_rating_history` | effective_date, rating, source (`manual` / `pdga_import`) — unique per date |
 | `dg_courses` | name, city, state, lat, lng, holes, terrain, **layout_mode** (`fixed` / `varies`), **fixed_par** (only when fixed), length_ft, notes |
 | `dg_leagues` | name, day_time, home_course_id, color, notes, active |
-| `dg_events` | name, start_date, end_date, city, lat, lng, pdga (bool), tier, division, **format** (`singles`/`doubles`/`triples`/`team_doubles`/`match_play`), **status** (`interested`/`planning`/`registered`/`waitlisted`/`withdrew`/`played`/`recorded`), waitlist_pos, reg_opens_on, remind (bool), event_url, entry_fee, fee_split, **had_caddy** (bool), caddy_fee, rounds_planned, holes_per_match, team_name, partners text[], place, field_size, field_unit (`players`/`teams`), payout, notes |
+| `dg_events` | name, start_date, end_date, city, lat, lng, pdga (bool), tier, division, **format** (`singles`/`doubles`/`triples`/`team_doubles`/`match_play`), **status** (`interested`/`planning`/`registered`/`waitlisted`/`withdrew`/`played`/`recorded`), waitlist_pos, reg_opens_on, remind (bool), event_url, entry_fee, fee_split, **had_caddy** (bool), caddy_fee, rounds_planned, holes_per_match, team_name, partners text[], place, field_size, field_unit (`players`/`teams`), payout, home_drive_minutes, home_drive_miles (day trips; trips with lodging use `dg_lodging`), notes |
 | `dg_event_courses` | event_id, course_id, drive_minutes, drive_miles (from lodging or home) |
 | `dg_lodging` | event_id, type, name, address, lat, lng, nights, cost, split, drive_minutes, drive_miles (from home) |
 | `dg_rounds` | **kind** (`tournament`/`league`/`casual`), event_id, league_id, course_id, played_on, round_number, layout_note, **par** (always on the round), score, rating, place, field_size, fee, payout, is_team (bool), notes |
@@ -92,7 +92,7 @@ Upcoming: registration ticket (opens date, fee, reminder toggle, status stamp) �
 Past: result strip · scorecard (rounds, add missing round) or match list · field notes · status · receipt (fees, caddy, lodging, gas, payout, net).
 Edit and delete.
 
-### Rounds (new — replaces the old Rounds tab)
+### Rounds (new — replaces the old Rounds tab; lives at Results → Rounds, `#/results/rounds`)
 One sortable table of every round (tournament, league, casual). Filters: season, kind, event, course, format, rating range. Quick filters such as **1000+ rated**, **This season**, **Under par**. Tap a row → its event/league/course.
 
 ### Results
