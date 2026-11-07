@@ -54,7 +54,7 @@ watch(() => e.value?.status, (s, old) => { if (old && s !== old) slam.value = tr
         </div>
         <h2 data-sentinel>{{ title.head }} <em>{{ title.last }}</em></h2>
         <div class="lf">
-          <span class="meta" style="color: var(--ink-2); font-weight: 600">{{ fmtRange(e.start_date, e.end_date) }}{{ year }}<template v-if="e.city"> · {{ e.city }}</template></span>
+          <span class="meta" style="color: var(--ink); font-weight: var(--w-strong)">{{ fmtRange(e.start_date, e.end_date) }}{{ year }}<template v-if="e.city"> · {{ e.city }}</template></span>
           <span class="chips"><span class="chip">{{ e.pdga ? 'PDGA ' + (e.tier || '') : 'Non-PDGA' }}</span><span class="chip">{{ FORMAT[e.format] }}<template v-if="e.division"> · {{ e.division }}</template></span></span>
         </div>
       </div>
@@ -93,8 +93,8 @@ watch(() => e.value?.status, (s, old) => { if (old && s !== old) slam.value = tr
           <div class="pb" style="padding-top: 8px">
             <RouterLink v-for="x in courses" :key="x.course_id" class="course-card" :to="`/course/${x.course_id}`">
               <Plate :course="x.c" lite class="thumb" />
-              <div style="flex: 1; min-width: 0"><span class="mono" style="font-size: 9.5px">{{ plateNumber(x.course_id) }}</span><b style="display: block; font-size: 15.5px; font-weight: 650">{{ x.c.name }}</b><div class="meta">{{ x.c.holes }} holes<template v-if="x.c.city"><span class="dot"></span>{{ x.c.city }}</template></div></div>
-              <span v-if="x.drive_minutes != null" class="meta" style="color: var(--ink-2); font-weight: 650"><Icon name="car" size="xs" />{{ hhmm(x.drive_minutes) }}</span>
+              <div style="flex: 1; min-width: 0"><span class="mono" style="font-size: var(--t-label)">{{ plateNumber(x.course_id) }}</span><b style="display: block; font-size: var(--t-body); font-weight: var(--w-strong)">{{ x.c.name }}</b><div class="meta">{{ x.c.holes }} holes<template v-if="x.c.city"><span class="dot"></span>{{ x.c.city }}</template></div></div>
+              <span v-if="x.drive_minutes != null" class="meta" style="color: var(--ink); font-weight: var(--w-strong)"><Icon name="car" size="xs" />{{ hhmm(x.drive_minutes) }}</span>
               <Icon v-else name="chevR" size="sm" />
             </RouterLink>
             <p v-if="!courses.length" class="meta">No courses yet — add them from Edit.</p>
@@ -105,7 +105,7 @@ watch(() => e.value?.status, (s, old) => { if (old && s !== old) slam.value = tr
           <div class="ph"><h3>{{ isMatch ? 'Team' : e.partners.length > 1 ? 'Teammates' : 'Partner' }}</h3></div>
           <div class="pb">
             <div v-for="n in (isMatch ? [e.team_name] : e.partners)" :key="n" class="kv">
-              <span class="ic-tile" style="font-weight: 700; font-size: 12px; --c: var(--plum)">{{ n.split(' ').map((w) => w[0]).join('').slice(0, 2) }}</span>
+              <span class="ic-tile" style="font-weight: var(--w-strong); font-size: var(--t-small); --c: var(--plum)">{{ n.split(' ').map((w) => w[0]).join('').slice(0, 2) }}</span>
               <div><div class="v">{{ n }}</div><div class="k">{{ isMatch ? `${e.holes_per_match || 12}-hole matches · holes won decide it` : 'Best shot · one team score' }}</div></div>
             </div>
           </div>
@@ -121,14 +121,14 @@ watch(() => e.value?.status, (s, old) => { if (old && s !== old) slam.value = tr
           <StatusStations :event="e" :today="state.today" />
           <div v-if="e.partners.length || e.team_name" class="card">
             <div class="ph"><h3>{{ isMatch ? 'Team' : e.partners.length > 1 ? 'Teammates' : 'Partner' }}</h3></div>
-            <div class="pb"><div v-for="n in (isMatch ? [e.team_name] : e.partners)" :key="n" class="kv"><span class="ic-tile" style="font-weight: 700; font-size: 12px; --c: var(--plum)">{{ n.split(' ').map((w) => w[0]).join('').slice(0, 2) }}</span><div class="v">{{ n }}</div></div></div>
+            <div class="pb"><div v-for="n in (isMatch ? [e.team_name] : e.partners)" :key="n" class="kv"><span class="ic-tile" style="font-weight: var(--w-strong); font-size: var(--t-small); --c: var(--plum)">{{ n.split(' ').map((w) => w[0]).join('').slice(0, 2) }}</span><div class="v">{{ n }}</div></div></div>
           </div>
           <div class="card">
             <div class="ph"><h3>{{ courses.length > 1 ? courses.length + ' courses' : 'Course' }}</h3></div>
             <div class="pb" style="padding-top: 8px">
               <RouterLink v-for="x in courses" :key="x.course_id" class="course-card" :to="`/course/${x.course_id}`">
                 <Plate :course="x.c" lite class="thumb" />
-                <div style="flex: 1; min-width: 0"><b style="display: block; font-size: 15.5px; font-weight: 650">{{ x.c.name }}</b><div class="meta">{{ x.c.holes }} holes<template v-if="x.c.city"><span class="dot"></span>{{ x.c.city }}</template></div></div>
+                <div style="flex: 1; min-width: 0"><b style="display: block; font-size: var(--t-body); font-weight: var(--w-strong)">{{ x.c.name }}</b><div class="meta">{{ x.c.holes }} holes<template v-if="x.c.city"><span class="dot"></span>{{ x.c.city }}</template></div></div>
                 <Icon name="chevR" size="sm" />
               </RouterLink>
               <p v-if="!courses.length" class="meta">No courses linked.</p>

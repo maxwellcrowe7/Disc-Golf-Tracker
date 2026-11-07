@@ -142,7 +142,7 @@ async function reimport() {
 
           <div class="rating-list">
             <div v-for="r in history" :key="r.id || r.effective_date" class="kv">
-              <div><div class="v num" style="font-size: 20px">{{ r.rating }}</div><div class="k">{{ fmtDateY(r.effective_date) }}<template v-if="r.source !== 'manual'"> · {{ r.source === 'pdga_import' ? 'from PDGA' : 'from old app' }}</template></div></div>
+              <div><div class="v num" style="font-size: var(--t-name)">{{ r.rating }}</div><div class="k">{{ fmtDateY(r.effective_date) }}<template v-if="r.source !== 'manual'"> · {{ r.source === 'pdga_import' ? 'from PDGA' : 'from old app' }}</template></div></div>
               <button class="end icon-btn" style="width: 32px; height: 32px; box-shadow: none" aria-label="Delete rating" @click="removeRating(r)"><Icon name="x" size="xs" /></button>
             </div>
             <p v-if="!history.length" class="muted">No ratings yet.</p>

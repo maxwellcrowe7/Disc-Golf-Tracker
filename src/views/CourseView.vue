@@ -34,7 +34,7 @@ const sub = (r) => (r.kind === 'tournament' ? `Round ${r.round_number}${r.is_tea
         <div class="lh"><span class="mono">{{ plateNumber(c.id) }} · {{ c.terrain }}</span><span class="mono">{{ coords(c.lat, c.lng) }}</span></div>
         <h2 data-sentinel>{{ title.head }} <em>{{ title.last }}</em></h2>
         <div class="lf">
-          <span class="meta" style="color: var(--ink-2); font-weight: 600">{{ c.city }}{{ c.state ? ', ' + c.state : '' }}<template v-if="c.length_ft"> · {{ c.length_ft.toLocaleString() }} ft</template></span>
+          <span class="meta" style="color: var(--ink); font-weight: var(--w-strong)">{{ c.city }}{{ c.state ? ', ' + c.state : '' }}<template v-if="c.length_ft"> · {{ c.length_ft.toLocaleString() }} ft</template></span>
           <span class="chips"><span class="chip">{{ c.holes }} holes</span></span>
         </div>
       </div>
@@ -52,7 +52,7 @@ const sub = (r) => (r.kind === 'tournament' ? `Round ${r.round_number}${r.is_tea
         <div class="card list">
           <div class="ph" style="padding-bottom: 10px"><h3>Round history</h3><button class="btn sm" @click="openSheet(RoundSheet, { courseId: c.id })"><Icon name="plus" size="xs" />Round</button></div>
           <button v-for="r in rounds" :key="r.id" class="lrow" @click="openSheet(RoundSheet, { id: r.id })">
-            <div class="body"><div class="name" style="font-size: 14.5px">{{ label(r) }}</div><div class="meta">{{ fmtDateY(r.played_on) }} · {{ sub(r) }}</div></div>
+            <div class="body"><div class="name" style="font-size: var(--t-body)">{{ label(r) }}</div><div class="meta">{{ fmtDateY(r.played_on) }} · {{ sub(r) }}</div></div>
             <span class="mono">{{ r.rating || '' }}</span>
             <div class="end"><ScoreMark v-if="r.score != null && r.par != null" :score="r.score" :par="r.par" /><small>{{ r.score }} thr · par {{ r.par }}</small></div>
           </button>
@@ -64,7 +64,7 @@ const sub = (r) => (r.kind === 'tournament' ? `Round ${r.round_number}${r.is_tea
           <div class="ph"><h3>Events here</h3></div>
           <div class="pb" style="padding-top: 6px">
             <RouterLink v-for="e in events" :key="e.id" class="lrow" style="padding: 11px 0" :to="`/event/${e.id}`">
-              <div class="body"><div class="name" style="font-size: 14.5px">{{ e.name }}</div><div class="meta">{{ fmtDateY(e.start_date) }}</div></div>
+              <div class="body"><div class="name" style="font-size: var(--t-body)">{{ e.name }}</div><div class="meta">{{ fmtDateY(e.start_date) }}</div></div>
               <StatusChip :event="e" />
             </RouterLink>
             <p v-if="!events.length" class="muted">None yet.</p>

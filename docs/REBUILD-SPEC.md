@@ -20,11 +20,30 @@ Living document for the v2 rebuild. The approved visual direction is the **v4 "s
 | Element | Rule |
 |---|---|
 | Type | Fraunces (headlines, numbers) · Instrument Sans (UI) · Geist Mono (labels, units, metadata) |
-| Color | Paper `#F2EDE1`, ink `#15211B`, forest `#163D2C`, moss `#2C6A47`. One accent — **disc orange `#FF5A1F`** — reserved for the disc, flight lines, the + button, countdowns, and section numbers. |
+| Color | Paper `#F2EDE1`, ink `#15211B`, forest `#163D2C`, moss `#2C6A47`. One accent — **disc orange `#FF5A1F`** — see the hierarchy rules below. |
 | Scorecard notation | Under par = circle · 5+ under = double circle · over par = box · even = plain. Applies everywhere a to-par number appears; match-play holes use the same shapes (won = filled circle, lost = box). |
 | Status colours | Interested (slate) · Planning (amber) · Registered (green) · Waitlisted (orange) · Withdrew (brick) · Played (blue) · Recorded (ink) |
 | Plates | Seeded per course: halftone elevation, contour ink, paper knock-out fairway, orange flight + basket, north arrow / scale bar / plate number. Dark mode = "night map". |
 | Dark mode | Supported; light is the default. |
+
+**Visual hierarchy rules** — conservative but effective. Enough contrast that the eye lands where intended; few enough styles that nothing feels disjointed. Every text style comes from the tokens in `src/styles.css` (`--t-*`, `--w-*`, `--tr-*`); no hard-coded px sizes in CSS or templates.
+
+| Role | Token | Size (mobile / desktop) | Face |
+|---|---|---|---|
+| Page title | `--t-page` | 38 / 56 | Fraunces 520, italic 340 for the accent word |
+| Hero & banner title | `--t-hero` | 32 / 46 | Fraunces 520 |
+| Key figure | `--t-fig` | 36 | Fraunces 520, tight tracking |
+| Section / card title | `--t-title` | 24 | Fraunces 520 |
+| Name in a list, score in a row | `--t-name` | 19 | Fraunces 520 or sans 650 |
+| Body | `--t-body` | 15 | Instrument Sans 500 / 650 |
+| Secondary | `--t-small` | 13 | Instrument Sans 500, muted |
+| Label | `--t-label` | 10.5 | Geist Mono, uppercase, .08em |
+
+- **One oversized moment per screen at most** — today that's only the Home countdown.
+- **Weights:** 340 (italic accent), 500, 520 (serif), 650. Nothing else.
+- **Text colour has three tiers:** ink (primary), muted (secondary), faint (disabled, axes). Colour beyond that is semantic only — status chips, scorecard green, money in/out.
+- **Disc orange means "this one":** the + / Log button, primary Save buttons, the countdown, the disc and flight on plates, "You are here", 1000+ ratings, the active-nav marker. It is not used for decoration — no orange section numbers, kickers or labels.
+- **Adding a new size, weight or colour needs a reason** written next to it; the default answer is to reuse a role above.
 
 **Motion rules** (learned from v3 → v4):
 - Nothing animates on its own or on scroll. Content renders in its final state immediately.

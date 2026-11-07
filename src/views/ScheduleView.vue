@@ -145,7 +145,7 @@ const setMode = (m) => router.replace(m === 'list' ? '/schedule' : `/schedule/${
     <SeasonMap ref="mapRef" :events="list" :home="home" :drive-times="drive" />
     <div class="card list">
       <div class="map-tools">
-        <div><b style="font-size: 14.5px">Drive times</b><div class="meta">{{ home ? 'From ' + (home.label || 'home') : 'Set your home base in Settings' }}</div></div>
+        <div><b style="font-size: var(--t-body)">Drive times</b><div class="meta">{{ home ? 'From ' + (home.label || 'home') : 'Set your home base in Settings' }}</div></div>
         <button class="switch" :class="{ on: drive }" aria-label="Show drive times" @click="drive = !drive"></button>
       </div>
       <button v-for="e in list" :key="e.id" class="lrow" @click="e.lat != null ? mapRef.focus(e.id) : router.push(`/event/${e.id}`)">

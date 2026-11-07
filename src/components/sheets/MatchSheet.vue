@@ -84,7 +84,7 @@ function remove() {
         </div>
         <div class="live">
           <span>{{ tally.W }} won · {{ tally.P }} pushed · {{ tally.L }} lost</span>
-          <span class="num" :style="{ color: played ? (tally.res === 'W' ? 'var(--good)' : 'var(--ink-2)') : 'var(--faint)' }">{{ played ? { W: `${tally.W - tally.L} up`, L: `${tally.L - tally.W} down`, P: 'All square' }[tally.res] : '—' }}</span>
+          <span class="num" :style="{ color: played ? (tally.res === 'W' ? 'var(--good)' : 'var(--ink)') : 'var(--faint)' }">{{ played ? { W: `${tally.W - tally.L} up`, L: `${tally.L - tally.W} down`, P: 'All square' }[tally.res] : '—' }}</span>
         </div>
       </div>
       <div class="field" style="max-width: 160px"><div class="lbl">Holes in match</div><input v-model="form.hole_count" class="input" inputmode="numeric" /></div>

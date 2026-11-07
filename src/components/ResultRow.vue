@@ -29,11 +29,11 @@ const suffix = computed(() => (e.value.place ? ord(e.value.place).slice(String(e
     <span v-else class="thumb art"></span>
     <div style="min-width: 0">
       <div class="name">{{ e.name }}</div>
-      <div class="meta">{{ fmtDateY(e.start_date) }}<span class="dot"></span>{{ FORMAT[e.format] }}<template v-if="missing"><span class="dot"></span><span style="color: var(--st-played); font-weight: 650">Needs details</span></template></div>
+      <div class="meta">{{ fmtDateY(e.start_date) }}<span class="dot"></span>{{ FORMAT[e.format] }}<template v-if="missing"><span class="dot"></span><span style="color: var(--st-played); font-weight: var(--w-strong)">Needs details</span></template></div>
     </div>
     <div class="cells">
       <template v-if="isMatch">
-        <span v-for="m in matches.slice(0, 3)" :key="m.id" class="sc" :class="{ W: 'under', L: 'over', P: 'even' }[matchResult(m)]" style="font-family: var(--mono); font-size: 11px">{{ matchResult(m) }}</span>
+        <span v-for="m in matches.slice(0, 3)" :key="m.id" class="sc" :class="{ W: 'under', L: 'over', P: 'even' }[matchResult(m)]" style="font-family: var(--mono); font-size: var(--t-label)">{{ matchResult(m) }}</span>
       </template>
       <template v-else>
         <template v-for="i in 3" :key="i">
@@ -44,7 +44,7 @@ const suffix = computed(() => (e.value.place ? ord(e.value.place).slice(String(e
       </template>
     </div>
     <div class="tot">
-      <template v-if="isMatch"><span class="num" style="font-size: 19px">{{ rec.w }}–{{ rec.l }}–{{ rec.p }}</span><small>W–L–P</small></template>
+      <template v-if="isMatch"><span class="num" style="font-size: var(--t-name)">{{ rec.w }}–{{ rec.l }}–{{ rec.p }}</span><small>W–L–P</small></template>
       <template v-else-if="total"><ScoreMark :score="total.score" :par="total.par" /><small>{{ total.n }} rds</small></template>
     </div>
     <div class="place">

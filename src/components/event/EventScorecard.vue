@@ -39,13 +39,13 @@ const add = () => openSheet(RoundSheet, { eventId: e.value.id })
         <tr>
           <td>Score</td>
           <td v-for="(r, i) in cols" :key="i">
-            <button v-if="r" style="font-weight: 600" @click="edit(r)">{{ r.score ?? '—' }}</button>
+            <button v-if="r" style="font-weight: var(--w-strong)" @click="edit(r)">{{ r.score ?? '—' }}</button>
             <button v-else class="addbtn" aria-label="Log this round" @click="add"><Icon name="plus" size="xs" /></button>
           </td>
           <td class="tot"><b>{{ tot.s || '' }}</b></td>
         </tr>
         <tr><td>To par</td><td v-for="(r, i) in cols" :key="i"><ScoreMark v-if="r && r.score != null && r.par != null" :score="r.score" :par="r.par" /><span v-else class="muted">—</span></td><td class="tot"><ScoreMark v-if="scoredRounds.length" :score="tot.s" :par="tot.p" /></td></tr>
-        <tr v-if="rated"><td>Rating</td><td v-for="(r, i) in cols" :key="i" style="font-family: var(--mono); font-size: 12px">{{ r?.rating || '—' }}</td><td class="tot"></td></tr>
+        <tr v-if="rated"><td>Rating</td><td v-for="(r, i) in cols" :key="i" style="font-family: var(--mono); font-size: var(--t-small)">{{ r?.rating || '—' }}</td><td class="tot"></td></tr>
       </table>
     </div>
     <p v-if="extra.length" class="meta" style="padding: 10px 18px 0">{{ extra.length }} more round{{ extra.length > 1 ? 's' : '' }} without a round number — open it from the Rounds table to number it.</p>

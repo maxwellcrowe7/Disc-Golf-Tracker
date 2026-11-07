@@ -29,8 +29,8 @@ const roundLabel = (r) => `${eventById(r.event_id)?.name || '—'} · R${r.round
       <div class="tally">
         <div><span class="mono">Rounds</span><span class="num">{{ s.leagues.rounds }}</span></div>
         <div><span class="mono">Wins</span><span class="num">{{ s.leagues.wins }}</span><span class="meta">{{ s.leagues.podiums }} podiums</span></div>
-        <div><span class="mono">Net</span><span class="num" :style="{ color: s.leagues.net >= 0 ? 'var(--good)' : 'var(--ink-2)' }">{{ signed(s.leagues.net) }}</span></div>
-        <div><span class="mono">Cash in / out</span><span class="num" style="font-size: 22px">{{ money(s.leagues.cash) }}</span><span class="meta">Fees {{ money(s.leagues.fees) }}</span></div>
+        <div><span class="mono">Net</span><span class="num" :style="{ color: s.leagues.net >= 0 ? 'var(--good)' : 'var(--ink)' }">{{ signed(s.leagues.net) }}</span></div>
+        <div><span class="mono">Cash in / out</span><span class="num" style="font-size: var(--t-title)">{{ money(s.leagues.cash) }}</span><span class="meta">Fees {{ money(s.leagues.fees) }}</span></div>
       </div>
     </div>
 
@@ -71,10 +71,10 @@ const roundLabel = (r) => `${eventById(r.event_id)?.name || '—'} · R${r.round
     <div class="card stat-block">
       <div class="ph"><h3>Best &amp; worst rounds</h3></div>
       <div class="pb">
-        <div v-for="r in s.best" :key="r.id" class="kv"><div><div class="v">{{ roundLabel(r) }}</div><div class="k">{{ courseById(r.course_id)?.name }} · {{ fmtDateY(r.played_on) }}</div></div><span class="end num" style="font-size: 22px; color: var(--good)">{{ r.rating }}</span></div>
+        <div v-for="r in s.best" :key="r.id" class="kv"><div><div class="v">{{ roundLabel(r) }}</div><div class="k">{{ courseById(r.course_id)?.name }} · {{ fmtDateY(r.played_on) }}</div></div><span class="end num" style="font-size: var(--t-title); color: var(--good)">{{ r.rating }}</span></div>
         <template v-if="s.worst.length">
           <div class="mono" style="margin: 14px 0 4px">Lowest</div>
-          <div v-for="r in s.worst" :key="'w' + r.id" class="kv"><div><div class="v">{{ roundLabel(r) }}</div><div class="k">{{ courseById(r.course_id)?.name }} · {{ fmtDateY(r.played_on) }}</div></div><span class="end num" style="font-size: 22px; color: var(--ink-2)">{{ r.rating }}</span></div>
+          <div v-for="r in s.worst" :key="'w' + r.id" class="kv"><div><div class="v">{{ roundLabel(r) }}</div><div class="k">{{ courseById(r.course_id)?.name }} · {{ fmtDateY(r.played_on) }}</div></div><span class="end num" style="font-size: var(--t-title); color: var(--ink)">{{ r.rating }}</span></div>
         </template>
         <p v-if="!s.best.length" class="muted">No rated rounds.</p>
         <RouterLink to="/results/rounds" class="meta" style="display: block; margin-top: 10px; text-decoration: underline">All rounds, sortable →</RouterLink>

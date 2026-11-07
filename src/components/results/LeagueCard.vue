@@ -40,7 +40,7 @@ const signed = (v) => (v >= 0 ? '+' : '−') + money(Math.abs(v))
         <Plate v-if="home" :course="home" lite class="thumb" />
         <span v-else class="league-chip" :style="{ background: l.color || 'var(--moss)', height: '54px', width: '8px' }"></span>
         <div class="body">
-          <div class="name" style="font-family: var(--display); font-size: 22px; font-weight: 520; letter-spacing: -0.02em">{{ l.name }}</div>
+          <div class="name" style="font-family: var(--display); font-size: var(--t-title); font-weight: var(--w-display); letter-spacing: var(--tr-tight)">{{ l.name }}</div>
           <div class="meta"><span :style="{ width: '8px', height: '8px', borderRadius: '2px', background: l.color || 'var(--moss)' }"></span>{{ home?.name || 'No home course' }}<template v-if="l.day_time"><span class="dot"></span>{{ l.day_time }}</template><template v-if="!l.active"><span class="dot"></span>inactive</template></div>
         </div>
         <button class="btn sm primary" @click="openSheet(RoundSheet, { leagueId: l.id })"><Icon name="plus" size="xs" />Round</button>
@@ -50,14 +50,14 @@ const signed = (v) => (v >= 0 ? '+' : '−') + money(Math.abs(v))
         <div><span class="mono">Rounds</span><span class="num">{{ t.n }}</span></div>
         <div><span class="mono">Wins</span><span class="num">{{ t.wins }}</span><span class="meta">{{ t.podiums }} podiums</span></div>
         <div><span class="mono">Avg finish</span><span class="num">{{ t.topPct ? 'Top ' + t.topPct + '%' : '—' }}</span></div>
-        <div><span class="mono">Net</span><span class="num" :style="{ color: t.net >= 0 ? 'var(--good)' : 'var(--ink-2)' }">{{ signed(t.net) }}</span><span class="meta">{{ money(t.cash) }} in · {{ money(t.fees) }} fees</span></div>
+        <div><span class="mono">Net</span><span class="num" :style="{ color: t.net >= 0 ? 'var(--good)' : 'var(--ink)' }">{{ signed(t.net) }}</span><span class="meta">{{ money(t.cash) }} in · {{ money(t.fees) }} fees</span></div>
       </div>
       <div v-if="seasons.length > 1" class="season-table">
         <div class="st-row st-head mono"><span>Season</span><span>Rds</span><span>Wins</span><span>Podiums</span><span>Fees</span><span>Cash</span><span>Net</span></div>
-        <div v-for="s in seasons" :key="s.y" class="st-row"><b>{{ s.y }}</b><span>{{ s.n }}</span><span>{{ s.wins }}</span><span>{{ s.podiums }}</span><span>{{ money(s.fees) }}</span><span>{{ money(s.cash) }}</span><span :style="{ color: s.net >= 0 ? 'var(--good)' : 'var(--ink-2)' }">{{ signed(s.net) }}</span></div>
+        <div v-for="s in seasons" :key="s.y" class="st-row"><b>{{ s.y }}</b><span>{{ s.n }}</span><span>{{ s.wins }}</span><span>{{ s.podiums }}</span><span>{{ money(s.fees) }}</span><span>{{ money(s.cash) }}</span><span :style="{ color: s.net >= 0 ? 'var(--good)' : 'var(--ink)' }">{{ signed(s.net) }}</span></div>
       </div>
       <button v-for="r in shown" :key="r.id" class="lrow" @click="openSheet(RoundSheet, { id: r.id })">
-        <div class="body"><div class="name" style="font-size: 14.5px">{{ fmtDow(r.played_on) }}<span class="muted" style="font-weight: 500"> · {{ r.played_on.slice(0, 4) }}</span></div><div class="meta"><template v-if="r.place">{{ ord(r.place) }}<template v-if="r.field_size"> of {{ r.field_size }}</template></template><template v-if="r.payout"><span class="dot"></span><span style="color: var(--good); font-weight: 650">+{{ money(r.payout) }}</span></template><template v-if="r.course_id && r.course_id !== l.home_course_id"><span class="dot"></span>{{ courseById(r.course_id)?.name }}</template></div></div>
+        <div class="body"><div class="name" style="font-size: var(--t-body)">{{ fmtDow(r.played_on) }}<span class="muted" style="font-weight: var(--w-regular)"> · {{ r.played_on.slice(0, 4) }}</span></div><div class="meta"><template v-if="r.place">{{ ord(r.place) }}<template v-if="r.field_size"> of {{ r.field_size }}</template></template><template v-if="r.payout"><span class="dot"></span><span style="color: var(--good); font-weight: var(--w-strong)">+{{ money(r.payout) }}</span></template><template v-if="r.course_id && r.course_id !== l.home_course_id"><span class="dot"></span>{{ courseById(r.course_id)?.name }}</template></div></div>
         <div class="end"><ScoreMark v-if="r.score != null && r.par != null" :score="r.score" :par="r.par" /><small>{{ r.score }} thr</small></div>
       </button>
       <button v-if="rounds.length > 8" class="btn block" style="margin: 8px 16px 16px; width: calc(100% - 32px)" @click="showAll = !showAll">{{ showAll ? 'Show fewer' : `Show all ${rounds.length} rounds` }}</button>

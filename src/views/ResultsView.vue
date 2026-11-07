@@ -80,7 +80,7 @@ watch(tab, () => nextTick(placeInd))
     <h2 v-else>All of it, <em>so far</em></h2>
     <div class="g">
       <div><span class="mono">Events</span><span class="num">{{ recap.events }}</span></div>
-      <div><span class="mono">Podiums</span><span class="num d">{{ recap.podiums }}</span></div>
+      <div><span class="mono">Podiums</span><span class="num">{{ recap.podiums }}</span></div>
       <div><span class="mono">Rounds logged</span><span class="num">{{ recap.rounds }}</span></div>
       <div><span class="mono">Rating climb</span><span class="num d">{{ recap.climb == null ? '—' : (recap.climb >= 0 ? '+' : '−') + Math.abs(recap.climb) }}</span></div>
     </div>

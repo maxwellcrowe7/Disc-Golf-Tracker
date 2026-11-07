@@ -36,7 +36,7 @@ async function toggleRemind() {
           <div><div class="k">Registration {{ regDays > 0 ? 'opens' : 'opened' }}</div><div class="v">{{ fmtDateY(e.reg_opens_on) }} <span class="reg-note" :class="{ open: regDays <= 0 }" style="margin-left: 4px">{{ regDays > 0 ? `in ${regDays} days` : 'open' }}</span></div></div>
         </div>
         <div v-if="e.entry_fee != null" class="kv">
-          <div><div class="k">Entry fee</div><div class="v">{{ money(e.entry_fee) }}<span v-if="e.fee_split > 1" class="muted" style="font-weight: 500; font-size: 13px"> / team · {{ money(e.entry_fee / e.fee_split) }} yours</span></div></div>
+          <div><div class="k">Entry fee</div><div class="v">{{ money(e.entry_fee) }}<span v-if="e.fee_split > 1" class="muted" style="font-weight: var(--w-regular); font-size: var(--t-small)"> / team · {{ money(e.entry_fee / e.fee_split) }} yours</span></div></div>
         </div>
         <div v-if="regDays > 0 && ['interested', 'planning'].includes(e.status)" class="remind">
           <Icon name="bell" size="sm" class="bell" />

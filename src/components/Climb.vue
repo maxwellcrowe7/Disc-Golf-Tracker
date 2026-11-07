@@ -72,7 +72,7 @@ const scrub = computed(() => {
         </span>
         <span class="scrub" :style="{ left: scrub.left }"><i :style="{ top: scrub.top }"></i><span :style="{ transform: `translateX(${scrub.shift})` }">{{ scrub.text }}</span></span>
       </div>
-      <div class="mono" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 9.5px; color: var(--faint)"><span v-for="l in xLabels" :key="l">{{ l }}</span></div>
+      <div class="mono" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: var(--t-label); color: var(--faint)"><span v-for="l in xLabels" :key="l">{{ l }}</span></div>
     </template>
     <p v-else class="meta" style="margin-top: 14px">
       The chart starts once there are two ratings. Add each update, or paste your past ratings, in
